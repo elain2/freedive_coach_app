@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#5EB6F7"/>
+      <stop offset="100%" style="stop-color:#2F86D6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Diver silhouette - centered for adaptive icon safe zone -->
+  <g transform="translate(512, 480)">
+    <!-- Body -->
+    <ellipse cx="0" cy="-60" rx="40" ry="50" fill="url(#waveGrad)"/>
+    <!-- Head -->
+    <circle cx="0" cy="-130" r="36" fill="url(#waveGrad)"/>
+    <!-- Arms spread -->
+    <path d="M-40 -60 Q-100 -45 -120 15" stroke="url(#waveGrad)" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <path d="M40 -60 Q100 -45 120 15" stroke="url(#waveGrad)" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <!-- Legs/Fins -->
+    <path d="M-18 -10 Q-26 65 -50 150" stroke="url(#waveGrad)" stroke-width="22" stroke-linecap="round" fill="none"/>
+    <path d="M18 -10 Q26 65 50 150" stroke="url(#waveGrad)" stroke-width="22" stroke-linecap="round" fill="none"/>
+    <!-- Fin tips -->
+    <path d="M-50 150 Q-85 200 -70 235" stroke="url(#waveGrad)" stroke-width="18" stroke-linecap="round" fill="none"/>
+    <path d="M50 150 Q85 200 70 235" stroke="url(#waveGrad)" stroke-width="18" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Bubbles -->
+  <circle cx="380" cy="280" r="10" fill="#5EB6F7" opacity="0.8"/>
+  <circle cx="415" cy="245" r="7" fill="#5EB6F7" opacity="0.6"/>
+  <circle cx="355" cy="230" r="5" fill="#5EB6F7" opacity="0.5"/>
+  <circle cx="640" cy="265" r="9" fill="#5EB6F7" opacity="0.7"/>
+  <circle cx="670" cy="235" r="6" fill="#5EB6F7" opacity="0.5"/>
+</svg>
