@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
-import 'analysis_screen.dart';
+import 'analysis_setup_screen.dart';
 
 class CoachScreen extends StatelessWidget {
   const CoachScreen({super.key});
@@ -41,7 +41,7 @@ class CoachScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AnalysisScreen()),
+          MaterialPageRoute(builder: (_) => const AnalysisSetupScreen()),
         );
       },
       child: Container(
@@ -84,8 +84,9 @@ class CoachScreen extends StatelessWidget {
         const SizedBox(height: 10),
         GestureDetector(
           onTap: () {
+            // TODO: Navigate to analysis history or specific result
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AnalysisScreen()),
+              MaterialPageRoute(builder: (_) => const AnalysisSetupScreen()),
             );
           },
           child: SurfaceCard(

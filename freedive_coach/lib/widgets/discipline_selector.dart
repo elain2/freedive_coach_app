@@ -7,19 +7,26 @@ class DisciplineSelector extends StatelessWidget {
   final Discipline? selected;
   final ValueChanged<Discipline> onSelected;
   final bool showAll;
+  final bool Function(Discipline)? filter;
 
   const DisciplineSelector({
     super.key,
     this.selected,
     required this.onSelected,
     this.showAll = true,
+    this.filter,
   });
 
   @override
   Widget build(BuildContext context) {
-    final disciplines = showAll
+    var disciplines = showAll
         ? Discipline.values
         : Discipline.values.where((d) => d.isDepthDiscipline).toList();
+
+    // Apply additional filter if provided
+    if (filter != null) {
+      disciplines = disciplines.where(filter!).toList();
+    }
 
     return Wrap(
       spacing: 8,
