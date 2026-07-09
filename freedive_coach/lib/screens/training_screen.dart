@@ -3,6 +3,8 @@ import '../theme/app_theme.dart';
 import '../models/breathing_table.dart';
 import '../widgets/surface_card.dart';
 import 'breathing_setup_screen.dart';
+import 'simulation_setup_screen.dart';
+import 'training_history_screen.dart';
 
 class TrainingScreen extends StatelessWidget {
   const TrainingScreen({super.key});
@@ -20,9 +22,9 @@ class TrainingScreen extends StatelessWidget {
           const SizedBox(height: 20),
           _buildBreathSection(context),
           const SizedBox(height: 20),
-          _buildSimulationSection(),
+          _buildSimulationSection(context),
           const SizedBox(height: 20),
-          _buildHistorySection(),
+          _buildHistorySection(context),
         ],
       ),
     );
@@ -112,76 +114,75 @@ class TrainingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSimulationSection() {
+  Widget _buildSimulationSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('다이빙 시뮬레이션', style: AppTextStyles.sectionTitle),
         const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.standard),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF14405F), Color(0xFF0A2438)],
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SimulationSetupScreen()),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.standard),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF14405F), Color(0xFF0A2438)],
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('멘탈 다이브', style: AppTextStyles.sectionTitle),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBright.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '3분 코스',
-                      style: AppTextStyles.caption.copyWith(color: AppColors.primaryBright),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                children: [
-                  _buildChip('30m'),
-                  _buildChip('40m'),
-                  _buildChip('50m'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '마지막 세션: 어제 40m',
-                    style: AppTextStyles.caption,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBright,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '시작',
-                      style: AppTextStyles.caption.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('멘탈 다이브', style: AppTextStyles.sectionTitle),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBright.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '타이밍 리허설',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.primaryBright),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '목표 수심, 속도, 마일스톤을 설정하고\n실제 다이브 전 타이밍을 연습하세요',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBright,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '시작',
+                        style: AppTextStyles.caption.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -200,7 +201,7 @@ class TrainingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistorySection() {
+  Widget _buildHistorySection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -208,9 +209,16 @@ class TrainingScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('훈련 기록', style: AppTextStyles.sectionTitle),
-            Text(
-              '전체 보기',
-              style: AppTextStyles.caption.copyWith(color: AppColors.primaryBright),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const TrainingHistoryScreen()),
+                );
+              },
+              child: Text(
+                '전체 보기',
+                style: AppTextStyles.caption.copyWith(color: AppColors.primaryBright),
+              ),
             ),
           ],
         ),
