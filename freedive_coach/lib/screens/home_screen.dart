@@ -172,7 +172,10 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   '예상 12:00',
-                  style: AppTextStyles.monoSmall,
+                  style: AppTextStyles.monoSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
