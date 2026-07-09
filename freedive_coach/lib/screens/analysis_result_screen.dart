@@ -254,7 +254,7 @@ class AnalysisResultScreen extends StatelessWidget {
 
   Color _getScoreColor(double score) {
     if (score >= 4.0) return AppColors.primaryBright;
-    if (score >= 3.0) return const Color(0xFFFFB74D); // amber
+    if (score >= 3.0) return AppColors.amber;
     return AppColors.coral;
   }
 

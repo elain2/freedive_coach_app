@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const Color bg = Color(0xFF05090F);
-  static const Color coral = Color(0xFFFF7B72);
-  static const Color deep = Color(0xFF0A2E4F);
-  static const Color line = Color(0xFF1C2B3A);
-  static const Color muted = Color(0xFF64808F);
-  static const Color primary = Color(0xFF2F86D6);
-  static const Color primaryBright = Color(0xFF5EB6F7);
-  static const Color surface = Color(0xFF0C141D);
-  static const Color surface2 = Color(0xFF142230);
-  static const Color tealDim = Color(0xFF0E2438);
-  static const Color text = Color(0xFFE9F1F7);
+  // Base colors from design.pen
+  static const Color bg = Color(0xFF03141D);
+  static const Color coral = Color(0xFFFF8D6B);
+  static const Color deep = Color(0xFF082534);
+  static const Color line = Color(0xFF1A5A6A);
+  static const Color muted = Color(0xFF84A8B2);
+  static const Color primary = Color(0xFF4FE0CC);
+  static const Color primaryBright = Color(0xFF9DE5E0);
+  static const Color surface = Color(0xFF0D3547);
+  static const Color surface2 = Color(0xFF103A4D);
+  static const Color tealDim = Color(0xFF2A9D8F);
+  static const Color text = Color(0xFFE8F5F6);
+
+  // Additional colors
+  static const Color amber = Color(0xFFFFCE6B);
+  static const Color mint = Color(0xFFA8E6CF);
   static const Color white = Color(0xFFFFFFFF);
   static const Color transparent = Colors.transparent;
 }
@@ -62,7 +67,7 @@ class AppTheme {
         elevation: 0,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF0C141D),
+        backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primaryBright,
         unselectedItemColor: AppColors.muted,
       ),
