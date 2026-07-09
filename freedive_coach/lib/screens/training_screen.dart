@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/breathing_table.dart';
 import '../widgets/surface_card.dart';
+import 'breathing_setup_screen.dart';
 
 class TrainingScreen extends StatelessWidget {
   const TrainingScreen({super.key});
@@ -16,7 +18,7 @@ class TrainingScreen extends StatelessWidget {
           const SizedBox(height: 20),
           _buildStreakBanner(),
           const SizedBox(height: 20),
-          _buildBreathSection(),
+          _buildBreathSection(context),
           const SizedBox(height: 20),
           _buildSimulationSection(),
           const SizedBox(height: 20),
@@ -65,7 +67,7 @@ class TrainingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBreathSection() {
+  Widget _buildBreathSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -73,30 +75,39 @@ class TrainingScreen extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _buildBreathCard('CO\u2082 테이블', '8라운드', '12:00', Icons.monitor_heart_outlined)),
+            Expanded(child: _buildBreathCard(context, 'CO\u2082 테이블', '8라운드', '12:00', Icons.monitor_heart_outlined, TableType.co2)),
             const SizedBox(width: 10),
-            Expanded(child: _buildBreathCard('O\u2082 테이블', '6라운드', '10:30', Icons.favorite_outline)),
+            Expanded(child: _buildBreathCard(context, 'O\u2082 테이블', '8라운드', '10:30', Icons.favorite_outline, TableType.o2)),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildBreathCard(String title, String rounds, String duration, IconData icon) {
-    return SurfaceCard(
-      padding: const EdgeInsets.all(14),
-      borderColor: Colors.transparent,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: AppColors.primaryBright),
-          const SizedBox(height: 8),
-          Text(title, style: AppTextStyles.sectionTitle),
-          const SizedBox(height: 4),
-          Text(rounds, style: AppTextStyles.caption),
-          const SizedBox(height: 2),
-          Text(duration, style: AppTextStyles.monoSmall),
-        ],
+  Widget _buildBreathCard(BuildContext context, String title, String rounds, String duration, IconData icon, TableType tableType) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => BreathingSetupScreen(initialType: tableType),
+          ),
+        );
+      },
+      child: SurfaceCard(
+        padding: const EdgeInsets.all(14),
+        borderColor: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 20, color: AppColors.primaryBright),
+            const SizedBox(height: 8),
+            Text(title, style: AppTextStyles.sectionTitle),
+            const SizedBox(height: 4),
+            Text(rounds, style: AppTextStyles.caption),
+            const SizedBox(height: 2),
+            Text(duration, style: AppTextStyles.monoSmall),
+          ],
+        ),
       ),
     );
   }
