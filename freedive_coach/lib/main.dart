@@ -60,7 +60,6 @@ class _MainScreenState extends State<MainScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildStatusBar(),
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,
@@ -74,38 +73,6 @@ class _MainScreenState extends State<MainScreen> {
                   _currentIndex = index;
                 });
               },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: SizedBox(
-        height: 54,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '9:41',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.text,
-              ),
-            ),
-            Row(
-              children: const [
-                Icon(Icons.signal_cellular_4_bar, size: 17, color: AppColors.text),
-                SizedBox(width: 6),
-                Icon(Icons.wifi, size: 17, color: AppColors.text),
-                SizedBox(width: 6),
-                Icon(Icons.battery_full, size: 17, color: AppColors.text),
-              ],
             ),
           ],
         ),

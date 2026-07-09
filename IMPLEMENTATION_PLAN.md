@@ -11,34 +11,41 @@
 
 | 구분 | 내용 |
 |------|------|
-| **프로토타입** | Flutter 앱 기본 구조 (7개 화면, 디자인 시스템) |
-| **003-breathing-training** | CO2/O2 테이블 타이머 MVP 완료 |
+| **프로토타입** | Flutter 앱 기본 구조 (15개 화면, 디자인 시스템) |
+| **003-breathing-training** | CO2/O2 테이블 타이머 MVP 완료 ✅ |
+| **004-dive-simulation** | 다이빙 시뮬레이션 구현 완료 ✅ |
 
-### 기존 화면 구조
+### 현재 화면 구조 (Phase 1 완료)
 
 ```
 lib/
 ├── screens/
-│   ├── home_screen.dart          # 홈 (대시보드)
-│   ├── log_timeline_screen.dart  # 로그 타임라인 (목업)
-│   ├── new_log_screen.dart       # 새 로그 작성 (목업)
-│   ├── coach_screen.dart         # AI 코치 (목업)
-│   ├── analysis_screen.dart      # 분석 결과 (목업)
-│   ├── training_screen.dart      # 트레이닝 메뉴
-│   ├── profile_screen.dart       # 마이 페이지 (목업)
-│   ├── breathing_setup_screen.dart     # [신규] 호흡 훈련 설정
-│   ├── breathing_timer_screen.dart     # [신규] 호흡 타이머
-│   └── breathing_complete_screen.dart  # [신규] 훈련 완료
+│   ├── home_screen.dart               # 홈 (대시보드)
+│   ├── log_timeline_screen.dart       # 로그 타임라인 (목업)
+│   ├── new_log_screen.dart            # 새 로그 작성 (목업)
+│   ├── coach_screen.dart              # AI 코치 (목업)
+│   ├── analysis_screen.dart           # 분석 결과 (목업)
+│   ├── training_screen.dart           # 트레이닝 메뉴 ✅
+│   ├── profile_screen.dart            # 마이 페이지 (목업)
+│   ├── breathing_setup_screen.dart    # [003] 호흡 훈련 설정 ✅
+│   ├── breathing_timer_screen.dart    # [003] 호흡 타이머 ✅
+│   ├── breathing_complete_screen.dart # [003] 훈련 완료 ✅
+│   ├── training_history_screen.dart   # [003] 훈련 기록 ✅
+│   ├── simulation_setup_screen.dart   # [004] 시뮬레이션 설정 ✅
+│   └── simulation_run_screen.dart     # [004] 시뮬레이션 실행 ✅
 ├── models/
-│   ├── breathing_table.dart      # [신규] 호흡 테이블 모델
-│   └── training_session.dart     # [신규] 훈련 세션 모델
+│   ├── breathing_table.dart           # [003] 호흡 테이블 모델 ✅
+│   ├── training_session.dart          # [003] 훈련 세션 모델 ✅
+│   └── simulation_profile.dart        # [004] 시뮬레이션 프로필 ✅
 ├── services/
-│   ├── table_generator.dart      # [신규] 테이블 생성 서비스
-│   ├── timer_service.dart        # [신규] 타이머 상태 머신
-│   └── training_storage.dart     # [신규] 로컬 저장소
+│   ├── table_generator.dart           # [003] 테이블 생성 서비스 ✅
+│   ├── timer_service.dart             # [003] 타이머 상태 머신 ✅
+│   ├── training_storage.dart          # [003] 로컬 저장소 ✅
+│   └── simulation_service.dart        # [004] 시뮬레이션 서비스 ✅
 └── widgets/
-    ├── timer_display.dart        # [신규] 타이머 위젯
-    └── round_indicator.dart      # [신규] 라운드 표시 위젯
+    ├── timer_display.dart             # [003] 타이머 위젯 ✅
+    ├── round_indicator.dart           # [003] 라운드 표시 위젯 ✅
+    └── depth_gauge.dart               # [004] 깊이 게이지 ✅
 ```
 
 ---
@@ -47,18 +54,18 @@ lib/
 
 | 순위 | 기능 | 상태 | 복잡도 | 의존성 |
 |------|------|------|--------|--------|
-| 1 | **003 호흡 훈련** | MVP 완료 | 중 | 없음 |
-| 2 | **004 다이빙 시뮬레이션** | 미착수 | 중 | 003 타이머 재사용 |
-| 3 | **001 스마트 로깅** | 미착수 | 높음 | AI API 연동 |
-| 4 | **002 미디어 첨부** | 미착수 | 중 | 001 로그 모델 |
-| 5 | **006 로그 타임라인/통계** | 미착수 | 중 | 001, 002 |
-| 6 | **005 영상 폼 분석** | 미착수 | 높음 | AI Vision API |
+| 1 | **003 호흡 훈련** | ✅ 완료 | 중 | 없음 |
+| 2 | **004 다이빙 시뮬레이션** | ✅ 완료 | 중 | 003 타이머 재사용 |
+| 3 | **001 스마트 로깅** | ⬜ 미착수 | 높음 | AI API 연동 |
+| 4 | **002 미디어 첨부** | ⬜ 미착수 | 중 | 001 로그 모델 |
+| 5 | **006 로그 타임라인/통계** | ⬜ 미착수 | 중 | 001, 002 |
+| 6 | **005 영상 폼 분석** | ⬜ 미착수 | 높음 | AI Vision API |
 
 ---
 
-## Phase 1: 오프라인 훈련 도구 (완료/진행중)
+## Phase 1: 오프라인 훈련 도구 (완료)
 
-### 003 호흡 훈련 - CO2/O2 테이블 (완료)
+### 003 호흡 훈련 - CO2/O2 테이블 ✅ 완료
 
 **목표**: 개인 PB 기반 호흡 테이블 자동 생성 및 타이머 훈련
 
@@ -84,54 +91,35 @@ lib/
 
 ---
 
-### 004 다이빙 시뮬레이션 (다음 우선순위)
+### 004 다이빙 시뮬레이션 ✅ 완료
 
 **목표**: 실제 다이브 전 타이밍 리허설을 위한 시각적 시뮬레이션
 
-| User Story | 우선순위 | 예상 작업량 |
-|------------|----------|-------------|
-| US1: 시뮬레이션 파라미터 설정 | P1 | 중 |
-| US2: 시뮬레이션 실행 및 시각화 | P2 | 높음 |
-| US3: 시뮬레이션 제어 (일시정지/재개/중단) | P3 | 낮음 |
+| User Story | 우선순위 | 상태 |
+|------------|----------|------|
+| US1: 시뮬레이션 파라미터 설정 | P1 | ✅ 완료 |
+| US2: 시뮬레이션 실행 및 시각화 | P2 | ✅ 완료 |
+| US3: 시뮬레이션 제어 (일시정지/재개/중단) | P3 | ✅ 완료 |
 
-**핵심 엔티티**:
-```dart
-// SimulationProfile: 시뮬레이션 설정 프로필
-- targetDepth: int (목표 수심, m)
-- descentSpeed: double (하강 속도, m/s)
-- ascentSpeed: double (상승 속도, m/s)
-- freefallStartDepth: int (프리폴 시작 수심)
-- freefallSpeed: double (프리폴 속도)
-- mouthfillDepth: int (마우스필 수심)
-
-// SimulationSession: 실행 세션
-- profile: SimulationProfile
-- startedAt: DateTime
-- completedAt: DateTime?
-- actualDiveTime: Duration
-```
-
-**기술 고려사항**:
-- 003 TimerService 재사용 (일시정지/재개/리셋)
-- 깊이 시각화 애니메이션 (AnimationController)
+**구현 완료 항목**:
+- SimulationProfile 모델 (수심, 속도, 마일스톤 설정)
+- SimulationService (상태 머신: idle → descent → freefall → turn → ascent → completed)
+- DepthGauge 위젯 (깊이 시각화 애니메이션)
 - 마일스톤 알림 (마우스필, 프리폴, 턴, 수면)
-- Keep Awake, 백그라운드 타이머
+- Keep Awake, 사운드/진동 알림
 
-**예상 파일 구조**:
+**구현된 파일**:
 ```
 lib/
 ├── models/
-│   ├── simulation_profile.dart
-│   └── simulation_session.dart
+│   └── simulation_profile.dart      ✅
 ├── services/
-│   └── simulation_service.dart
+│   └── simulation_service.dart      ✅
 ├── screens/
-│   ├── simulation_setup_screen.dart
-│   ├── simulation_run_screen.dart
-│   └── simulation_complete_screen.dart
+│   ├── simulation_setup_screen.dart ✅
+│   └── simulation_run_screen.dart   ✅
 └── widgets/
-    ├── depth_gauge.dart
-    └── diver_animation.dart
+    └── depth_gauge.dart             ✅
 ```
 
 ---
@@ -375,41 +363,39 @@ dependencies:
 
 ## 구현 로드맵
 
-### Sprint 1 (현재)
+### Sprint 1 ✅ 완료
 - [x] 003 호흡 훈련 MVP
+- [x] 004 다이빙 시뮬레이션
 
-### Sprint 2
-- [ ] 004 다이빙 시뮬레이션
-- [ ] 003 호흡 훈련 Polish (히스토리, 통계)
-
-### Sprint 3
+### Sprint 2 (다음)
 - [ ] 001 스마트 로깅 (텍스트 입력)
 - [ ] 로컬 DB 마이그레이션 (SQLite)
 
-### Sprint 4
+### Sprint 3
 - [ ] 001 스마트 로깅 (음성 입력, AI 연동)
 - [ ] 002 미디어 첨부
 
-### Sprint 5
+### Sprint 4
 - [ ] 006 로그 타임라인/통계
 - [ ] 성장 그래프
 
-### Sprint 6
+### Sprint 5
 - [ ] 005 영상 폼 분석
 - [ ] 전체 통합 테스트
 
 ---
 
-## 다음 단계
+## 다음 단계 (Phase 2)
 
 **즉시 진행 가능**:
-1. 004 다이빙 시뮬레이션 - 003 타이머 인프라 재사용
-2. 003 호흡 훈련 히스토리 화면 추가
+1. 001 스마트 로깅 - 텍스트 기반 로그 작성 UI
+2. 006 로그 타임라인 - 로그 목록 및 통계 화면
 
 **AI API 준비 후 진행**:
-3. 001 스마트 로깅 - AI 파싱 서비스
+3. 001 스마트 로깅 - AI 파싱 서비스 연동
 4. 005 영상 폼 분석 - Vision API 연동
 
 ---
 
+*마지막 업데이트: 2026-07-09*
 *이 문서는 speckit 워크플로우의 specs/ 디렉토리 내용을 기반으로 작성되었습니다.*
