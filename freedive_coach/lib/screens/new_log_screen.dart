@@ -3,8 +3,10 @@ import 'package:image_picker/image_picker.dart';
 import '../models/discipline.dart';
 import '../models/dive_log.dart';
 import '../models/media_attachment.dart';
+import '../services/ai_parsing_service.dart';
 import '../services/log_storage.dart';
 import '../services/media_service.dart';
+import '../services/speech_service.dart';
 import '../services/text_parsing_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/discipline_selector.dart';
@@ -23,6 +25,8 @@ class _NewLogScreenState extends State<NewLogScreen> {
   final _logStorage = LogStorage();
   final _mediaService = MediaService();
   final _textParsingService = TextParsingService();
+  final _speechService = SpeechService();
+  final _aiParsingService = AIParsingService();
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _diveDate;
@@ -42,6 +46,8 @@ class _NewLogScreenState extends State<NewLogScreen> {
   bool _isEditing = false;
   bool _isSaving = false;
   bool _isQuickInputMode = true;
+  bool _isListening = false;
+  bool _isAIParsing = false;
 
   // Media state
   List<MediaAttachment> _existingAttachments = [];
@@ -261,6 +267,108 @@ class _NewLogScreenState extends State<NewLogScreen> {
       // Switch to detail mode after parsing
       _isQuickInputMode = false;
     });
+  }
+
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening) {
+      await _speechService.stopListening();
+      setState(() => _isListening = false);
+    } else {
+      final initialized = await _speechService.initialize();
+      if (!initialized) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('음성 인식을 사용할 수 없습니다')),
+          );
+        }
+        return;
+      }
+
+      await _speechService.startListening(
+        onResult: (text) {
+          setState(() {
+            _quickInputController.text = text;
+          });
+        },
+        onListeningStarted: () {
+          setState(() => _isListening = true);
+        },
+        onListeningStopped: () {
+          setState(() => _isListening = false);
+        },
+      );
+    }
+  }
+
+  Future<void> _parseWithAI() async {
+    final text = _quickInputController.text.trim();
+    if (text.isEmpty) return;
+
+    if (!_aiParsingService.isConfigured) {
+      // Fallback to local parsing
+      _parseQuickInput();
+      return;
+    }
+
+    setState(() => _isAIParsing = true);
+
+    try {
+      final parsed = await _aiParsingService.parseLogInput(text);
+
+      if (parsed.hasAnyData) {
+        setState(() {
+          if (parsed.discipline != null) {
+            _discipline = parsed.discipline!;
+          }
+          if (parsed.location != null) {
+            _locationController.text = parsed.location!;
+          }
+          if (parsed.depth != null) {
+            _depthController.text = parsed.depth!.toStringAsFixed(0);
+          }
+          if (parsed.distance != null) {
+            _distanceController.text = parsed.distance!.toStringAsFixed(0);
+          }
+          if (parsed.duration != null) {
+            _durationMinController.text = parsed.duration!.inMinutes.toString();
+            final secs = parsed.duration!.inSeconds % 60;
+            if (secs > 0) {
+              _durationSecController.text = secs.toString();
+            }
+          }
+          if (parsed.mouthfillDepth != null) {
+            _mouthfillController.text = parsed.mouthfillDepth!.toStringAsFixed(0);
+          }
+          if (parsed.freefallDepth != null) {
+            _freefallController.text = parsed.freefallDepth!.toStringAsFixed(0);
+          }
+          if (parsed.weight != null) {
+            _weightController.text = parsed.weight!.toStringAsFixed(1);
+          }
+          if (parsed.condition != null) {
+            _conditionController.text = parsed.condition!;
+          }
+          if (parsed.notes != null) {
+            _notesController.text = parsed.notes!;
+          }
+          if (parsed.date != null) {
+            _diveDate = parsed.date!;
+          }
+
+          _isQuickInputMode = false;
+        });
+      } else {
+        // Fallback to local parsing
+        _parseQuickInput();
+      }
+    } catch (e) {
+      // Fallback to local parsing on error
+      _parseQuickInput();
+    } finally {
+      if (mounted) {
+        setState(() => _isAIParsing = false);
+      }
+    }
   }
 
   void _onMediaAdded(List<XFile> files) {
@@ -554,44 +662,111 @@ class _NewLogScreenState extends State<NewLogScreen> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.standard),
-            border: Border.all(color: AppColors.line),
+            border: Border.all(
+              color: _isListening ? AppColors.primary : AppColors.line,
+              width: _isListening ? 2 : 1,
+            ),
           ),
           child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: _quickInputController,
-                  maxLines: 3,
-                  style: AppTextStyles.bodySmall,
-                  decoration: InputDecoration(
-                    hintText: '예: 오늘 제주에서 CWT 32m 성공, 마우스필 28m',
-                    hintStyle: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.muted.withOpacity(0.5),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _quickInputController,
+                        maxLines: 3,
+                        style: AppTextStyles.bodySmall,
+                        decoration: InputDecoration(
+                          hintText: _isListening
+                              ? '말씀하세요...'
+                              : '예: 오늘 제주에서 CWT 32m 성공, 마우스필 28m',
+                          hintStyle: AppTextStyles.bodySmall.copyWith(
+                            color: _isListening
+                                ? AppColors.primary
+                                : AppColors.muted.withOpacity(0.5),
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                      ),
                     ),
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                  onChanged: (_) {
-                    // Real-time parsing could be enabled here
-                  },
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _toggleVoiceInput,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: _isListening ? AppColors.primary : AppColors.tealDim,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Icon(
+                          _isListening ? Icons.stop : Icons.mic,
+                          size: 22,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (_isListening) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '녹음 중...',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.coral),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Container(height: 1, color: AppColors.line),
               GestureDetector(
-                onTap: _parseQuickInput,
+                onTap: _isAIParsing ? null : _parseWithAI,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.auto_fix_high, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        '자동 파싱',
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
-                      ),
+                      if (_isAIParsing) ...[
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'AI 분석 중...',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                        ),
+                      ] else ...[
+                        const Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          _aiParsingService.isConfigured ? 'AI 파싱' : '자동 파싱',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -602,7 +777,9 @@ class _NewLogScreenState extends State<NewLogScreen> {
         if (_isQuickInputMode) ...[
           const SizedBox(height: 12),
           Text(
-            '텍스트를 입력하고 자동 파싱을 누르면 필드가 자동으로 채워집니다.',
+            _aiParsingService.isConfigured
+                ? '텍스트 또는 음성으로 입력하면 AI가 자동으로 파싱합니다.'
+                : '텍스트를 입력하고 자동 파싱을 누르면 필드가 자동으로 채워집니다.',
             style: AppTextStyles.caption.copyWith(color: AppColors.muted),
           ),
         ],

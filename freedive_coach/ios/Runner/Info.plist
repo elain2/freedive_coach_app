@@ -70,5 +70,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>다이빙 로그 음성 입력을 위해 마이크 권한이 필요합니다.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>다이빙 로그 음성 입력을 위해 음성 인식 권한이 필요합니다.</string>
 </dict>
 </plist>
