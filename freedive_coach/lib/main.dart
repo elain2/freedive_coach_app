@@ -29,7 +29,7 @@ class FreeDiveCoachApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FreeDive Coach',
+      title: 'Dive Coach Cat',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const MainScreen(),
