@@ -22,6 +22,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
   MonthlyStats? _monthlyStats;
   bool _isLoading = true;
   Discipline? _filterDiscipline;
+  bool _showAllLogs = false;
 
   late int _selectedYear;
   late int _selectedMonth;
@@ -39,8 +40,16 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final logs = await _logStorage.getLogsByMonth(_selectedYear, _selectedMonth);
-      final stats = await _logStorage.getMonthlyStats(_selectedYear, _selectedMonth);
+      List<DiveLog> logs;
+      MonthlyStats? stats;
+
+      if (_showAllLogs) {
+        logs = await _logStorage.getLogs();
+        stats = null;
+      } else {
+        logs = await _logStorage.getLogsByMonth(_selectedYear, _selectedMonth);
+        stats = await _logStorage.getMonthlyStats(_selectedYear, _selectedMonth);
+      }
 
       setState(() {
         _logs = logs;
@@ -253,8 +262,34 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
 
     return Row(
       children: [
+        // All logs toggle button
         GestureDetector(
-          onTap: _previousMonth,
+          onTap: () {
+            setState(() => _showAllLogs = !_showAllLogs);
+            _loadLogs();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _showAllLogs ? AppColors.tealDim : AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _showAllLogs ? AppColors.primary : AppColors.line,
+              ),
+            ),
+            child: Text(
+              '전체',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: _showAllLogs ? Colors.white : AppColors.muted,
+                fontWeight: _showAllLogs ? FontWeight.w700 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Month navigation (disabled when showing all logs)
+        GestureDetector(
+          onTap: _showAllLogs ? null : _previousMonth,
           child: Container(
             width: 32,
             height: 32,
@@ -263,7 +298,11 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppColors.line),
             ),
-            child: const Icon(Icons.chevron_left, size: 16, color: AppColors.muted),
+            child: Icon(
+              Icons.chevron_left,
+              size: 16,
+              color: _showAllLogs ? AppColors.muted.withValues(alpha: 0.3) : AppColors.muted,
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -271,29 +310,44 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: _showAllLogs ? AppColors.surface2 : AppColors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.line),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  '$_selectedMonth월',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.primaryBright,
-                    fontWeight: FontWeight.w700,
+                if (_showAllLogs) ...[
+                  Text(
+                    '전체 로그',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primaryBright,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                if (_monthlyStats != null) ...[
                   Text(' · ', style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted)),
                   Text(
-                    '다이빙 ${_monthlyStats!.diveCount}회',
+                    '${_logs.length}회',
                     style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
                   ),
-                  if (_monthlyStats!.maxDepth != null) ...[
+                ] else ...[
+                  Text(
+                    '$_selectedMonth월',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primaryBright,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (_monthlyStats != null) ...[
                     Text(' · ', style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted)),
-                    Text('최고 ${_monthlyStats!.maxDepthFormatted}', style: AppTextStyles.monoSmall),
+                    Text(
+                      '다이빙 ${_monthlyStats!.diveCount}회',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+                    ),
+                    if (_monthlyStats!.maxDepth != null) ...[
+                      Text(' · ', style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted)),
+                      Text('최고 ${_monthlyStats!.maxDepthFormatted}', style: AppTextStyles.monoSmall),
+                    ],
                   ],
                 ],
               ],
@@ -302,7 +356,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
         ),
         const SizedBox(width: 8),
         GestureDetector(
-          onTap: isCurrentMonth ? null : _nextMonth,
+          onTap: (_showAllLogs || isCurrentMonth) ? null : _nextMonth,
           child: Container(
             width: 32,
             height: 32,
@@ -314,7 +368,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
             child: Icon(
               Icons.chevron_right,
               size: 16,
-              color: isCurrentMonth ? AppColors.muted.withValues(alpha: 0.3) : AppColors.muted,
+              color: (_showAllLogs || isCurrentMonth) ? AppColors.muted.withValues(alpha: 0.3) : AppColors.muted,
             ),
           ),
         ),
@@ -335,6 +389,15 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
 
   Widget _buildEmptyState() {
     final isFiltered = _filterDiscipline != null && _logs.isNotEmpty;
+
+    String emptyMessage;
+    if (isFiltered) {
+      emptyMessage = '${_filterDiscipline!.displayName} 기록이 없어요';
+    } else if (_showAllLogs) {
+      emptyMessage = '아직 기록이 없어요';
+    } else {
+      emptyMessage = '$_selectedMonth월 기록이 없어요';
+    }
 
     return Center(
       child: Padding(
@@ -357,9 +420,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              isFiltered
-                  ? '${_filterDiscipline!.displayName} 기록이 없어요'
-                  : '$_selectedMonth월 기록이 없어요',
+              emptyMessage,
               style: AppTextStyles.sectionTitle.copyWith(color: AppColors.muted),
             ),
             const SizedBox(height: 8),
