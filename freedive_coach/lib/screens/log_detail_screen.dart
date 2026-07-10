@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../models/discipline.dart';
 import '../models/dive_log.dart';
 import '../models/media_attachment.dart';
@@ -411,7 +412,7 @@ class _LogDetailScreenState extends State<LogDetailScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -503,7 +504,7 @@ class _LogDetailScreenState extends State<LogDetailScreen> {
               height: 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.coral.withOpacity(0.5)),
+                border: Border.all(color: AppColors.coral.withValues(alpha: 0.5)),
               ),
               child: Center(
                 child: Text(
@@ -539,10 +540,70 @@ class _LogDetailScreenState extends State<LogDetailScreen> {
   }
 }
 
-class _MediaViewerScreen extends StatelessWidget {
+class _MediaViewerScreen extends StatefulWidget {
   final MediaAttachment attachment;
 
   const _MediaViewerScreen({required this.attachment});
+
+  @override
+  State<_MediaViewerScreen> createState() => _MediaViewerScreenState();
+}
+
+class _MediaViewerScreenState extends State<_MediaViewerScreen> {
+  VideoPlayerController? _videoController;
+  bool _isInitialized = false;
+  bool _isPlaying = false;
+  bool _showControls = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.attachment.type == MediaType.video) {
+      _initializeVideo();
+    }
+  }
+
+  Future<void> _initializeVideo() async {
+    _videoController = VideoPlayerController.file(File(widget.attachment.filePath));
+    try {
+      await _videoController!.initialize();
+      _videoController!.addListener(_videoListener);
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
+    } catch (e) {
+      debugPrint('Error initializing video: $e');
+    }
+  }
+
+  void _videoListener() {
+    if (_videoController != null && mounted) {
+      final isPlaying = _videoController!.value.isPlaying;
+      if (isPlaying != _isPlaying) {
+        setState(() => _isPlaying = isPlaying);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.removeListener(_videoListener);
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayPause() {
+    if (_videoController == null) return;
+    if (_videoController!.value.isPlaying) {
+      _videoController!.pause();
+    } else {
+      _videoController!.play();
+    }
+  }
+
+  void _toggleControls() {
+    setState(() => _showControls = !_showControls);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -551,58 +612,47 @@ class _MediaViewerScreen extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            Center(
-              child: attachment.type == MediaType.photo
-                  ? InteractiveViewer(
-                      child: Image.file(
-                        File(attachment.filePath),
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.broken_image,
-                          size: 64,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.videocam,
-                          size: 64,
-                          color: AppColors.muted,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '비디오 재생은 준비 중입니다',
-                          style: AppTextStyles.bodySmall.copyWith(
+            GestureDetector(
+              onTap: widget.attachment.type == MediaType.video ? _toggleControls : null,
+              child: Center(
+                child: widget.attachment.type == MediaType.photo
+                    ? InteractiveViewer(
+                        child: Image.file(
+                          File(widget.attachment.filePath),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.broken_image,
+                            size: 64,
                             color: AppColors.muted,
                           ),
                         ),
-                      ],
-                    ),
+                      )
+                    : _buildVideoPlayer(),
+              ),
             ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 20,
+            if (_showControls) ...[
+              Positioned(
+                top: 8,
+                left: 8,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (attachment.comment != null && attachment.comment!.isNotEmpty)
+            ],
+            if (widget.attachment.comment != null && widget.attachment.comment!.isNotEmpty)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -614,13 +664,13 @@ class _MediaViewerScreen extends StatelessWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withOpacity(0.8),
+                        Colors.black.withValues(alpha: 0.8),
                         Colors.transparent,
                       ],
                     ),
                   ),
                   child: Text(
-                    attachment.comment!,
+                    widget.attachment.comment!,
                     style: AppTextStyles.body.copyWith(color: Colors.white),
                   ),
                 ),
@@ -629,5 +679,116 @@ class _MediaViewerScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildVideoPlayer() {
+    if (!_isInitialized || _videoController == null) {
+      return const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: AppColors.primary),
+          SizedBox(height: 16),
+          Text(
+            '비디오 로딩 중...',
+            style: TextStyle(color: AppColors.muted),
+          ),
+        ],
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
+          child: VideoPlayer(_videoController!),
+        ),
+        if (_showControls)
+          GestureDetector(
+            onTap: _togglePlayPause,
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isPlaying ? Icons.pause : Icons.play_arrow,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+          ),
+        if (_showControls)
+          Positioned(
+            bottom: 60,
+            left: 20,
+            right: 20,
+            child: _buildVideoProgress(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildVideoProgress() {
+    if (_videoController == null) return const SizedBox.shrink();
+
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: _videoController!,
+      builder: (context, value, child) {
+        final position = value.position;
+        final duration = value.duration;
+
+        return Column(
+          children: [
+            SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                activeTrackColor: AppColors.primary,
+                inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
+                thumbColor: AppColors.primary,
+                overlayColor: AppColors.primary.withValues(alpha: 0.2),
+              ),
+              child: Slider(
+                value: duration.inMilliseconds > 0
+                    ? position.inMilliseconds / duration.inMilliseconds
+                    : 0.0,
+                onChanged: (value) {
+                  final newPosition = Duration(
+                    milliseconds: (value * duration.inMilliseconds).round(),
+                  );
+                  _videoController!.seekTo(newPosition);
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(position),
+                    style: AppTextStyles.caption.copyWith(color: Colors.white),
+                  ),
+                  Text(
+                    _formatDuration(duration),
+                    style: AppTextStyles.caption.copyWith(color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 }

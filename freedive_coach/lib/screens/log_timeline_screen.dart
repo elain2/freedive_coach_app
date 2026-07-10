@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/discipline.dart';
 import '../models/dive_log.dart';
 import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
@@ -16,8 +17,10 @@ class LogTimelineScreen extends StatefulWidget {
 class _LogTimelineScreenState extends State<LogTimelineScreen> {
   final _logStorage = LogStorage();
   List<DiveLog> _logs = [];
+  List<DiveLog> _filteredLogs = [];
   MonthlyStats? _monthlyStats;
   bool _isLoading = true;
+  Discipline? _filterDiscipline;
 
   late int _selectedYear;
   late int _selectedMonth;
@@ -40,12 +43,64 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
 
       setState(() {
         _logs = logs;
+        _applyFilter();
         _monthlyStats = stats;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _applyFilter() {
+    if (_filterDiscipline == null) {
+      _filteredLogs = _logs;
+    } else {
+      _filteredLogs = _logs.where((log) => log.discipline == _filterDiscipline).toList();
+    }
+  }
+
+  void _showStats() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _StatsSheet(
+        stats: _monthlyStats,
+        logs: _logs,
+        month: _selectedMonth,
+        year: _selectedYear,
+      ),
+    );
+  }
+
+  void _showFilters() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _FilterSheet(
+        selectedDiscipline: _filterDiscipline,
+        onDisciplineSelected: (discipline) {
+          Navigator.pop(context);
+          setState(() {
+            _filterDiscipline = discipline;
+            _applyFilter();
+          });
+        },
+        onClearFilters: () {
+          Navigator.pop(context);
+          setState(() {
+            _filterDiscipline = null;
+            _applyFilter();
+          });
+        },
+      ),
+    );
   }
 
   void _previousMonth() {
@@ -115,7 +170,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
                 const SizedBox(height: 16),
                 if (_isLoading)
                   _buildLoading()
-                else if (_logs.isEmpty)
+                else if (_filteredLogs.isEmpty)
                   _buildEmptyState()
                 else
                   _buildTimeline(),
@@ -136,34 +191,67 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('로그', style: AppTextStyles.titleMedium),
         Row(
           children: [
-            _buildIconButton(Icons.bar_chart, onTap: () {
-              // TODO: Show stats
-            }),
+            Text('로그', style: AppTextStyles.titleMedium),
+            if (_filterDiscipline != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.tealDim,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _filterDiscipline!.displayName,
+                      style: AppTextStyles.caption.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _filterDiscipline = null;
+                          _applyFilter();
+                        });
+                      },
+                      child: const Icon(Icons.close, size: 12, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        Row(
+          children: [
+            _buildIconButton(Icons.bar_chart, onTap: _showStats),
             const SizedBox(width: 10),
-            _buildIconButton(Icons.tune, onTap: () {
-              // TODO: Show filters
-            }),
+            _buildIconButton(
+              Icons.tune,
+              onTap: _showFilters,
+              isActive: _filterDiscipline != null,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildIconButton(IconData icon, {VoidCallback? onTap}) {
+  Widget _buildIconButton(IconData icon, {VoidCallback? onTap, bool isActive = false}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: isActive ? AppColors.tealDim : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.line),
+          border: Border.all(color: isActive ? AppColors.primary : AppColors.line),
         ),
-        child: Icon(icon, size: 16, color: AppColors.muted),
+        child: Icon(icon, size: 16, color: isActive ? Colors.white : AppColors.muted),
       ),
     );
   }
@@ -235,7 +323,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
             child: Icon(
               Icons.chevron_right,
               size: 16,
-              color: isCurrentMonth ? AppColors.muted.withOpacity(0.3) : AppColors.muted,
+              color: isCurrentMonth ? AppColors.muted.withValues(alpha: 0.3) : AppColors.muted,
             ),
           ),
         ),
@@ -255,6 +343,8 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
   }
 
   Widget _buildEmptyState() {
+    final isFiltered = _filterDiscipline != null && _logs.isNotEmpty;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 60),
@@ -268,22 +358,48 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.line),
               ),
-              child: const Icon(
-                Icons.water,
+              child: Icon(
+                isFiltered ? Icons.filter_alt_off : Icons.water,
                 size: 32,
                 color: AppColors.muted,
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              '$_selectedMonth월 기록이 없어요',
+              isFiltered
+                  ? '${_filterDiscipline!.displayName} 기록이 없어요'
+                  : '$_selectedMonth월 기록이 없어요',
               style: AppTextStyles.sectionTitle.copyWith(color: AppColors.muted),
             ),
             const SizedBox(height: 8),
             Text(
-              '아래 버튼을 눌러 새 로그를 작성해보세요',
+              isFiltered
+                  ? '필터를 해제하거나 다른 종목을 선택해보세요'
+                  : '아래 버튼을 눌러 새 로그를 작성해보세요',
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
             ),
+            if (isFiltered) ...[
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _filterDiscipline = null;
+                    _applyFilter();
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.tealDim,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '필터 해제',
+                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -293,13 +409,13 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
   Widget _buildTimeline() {
     return Column(
       children: [
-        for (int i = 0; i < _logs.length; i++) ...[
+        for (int i = 0; i < _filteredLogs.length; i++) ...[
           LogEntryCard(
-            log: _logs[i],
+            log: _filteredLogs[i],
             isFirst: i == 0,
-            onTap: () => _openLogDetail(_logs[i]),
+            onTap: () => _openLogDetail(_filteredLogs[i]),
           ),
-          if (i < _logs.length - 1) const SizedBox(height: 12),
+          if (i < _filteredLogs.length - 1) const SizedBox(height: 12),
         ],
       ],
     );
@@ -315,7 +431,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
           borderRadius: BorderRadius.circular(26),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -330,6 +446,294 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
               '새 로그',
               style: AppTextStyles.sectionTitle.copyWith(color: Colors.white),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatsSheet extends StatelessWidget {
+  final MonthlyStats? stats;
+  final List<DiveLog> logs;
+  final int month;
+  final int year;
+
+  const _StatsSheet({
+    required this.stats,
+    required this.logs,
+    required this.month,
+    required this.year,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate discipline breakdown
+    final disciplineCounts = <Discipline, int>{};
+    Duration totalDuration = Duration.zero;
+    double totalDepth = 0;
+    int depthCount = 0;
+
+    for (final log in logs) {
+      disciplineCounts[log.discipline] = (disciplineCounts[log.discipline] ?? 0) + 1;
+      if (log.duration != null) {
+        totalDuration += log.duration!;
+      }
+      if (log.depth != null) {
+        totalDepth += log.depth!;
+        depthCount++;
+      }
+    }
+
+    final avgDepth = depthCount > 0 ? totalDepth / depthCount : 0.0;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.muted,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('$month월 통계', style: AppTextStyles.titleSmall),
+            const SizedBox(height: 20),
+            if (stats == null || logs.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Text(
+                  '기록이 없습니다',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+                ),
+              )
+            else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.water,
+                      label: '총 다이빙',
+                      value: '${stats!.diveCount}회',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.arrow_downward,
+                      label: '최고 수심',
+                      value: stats!.maxDepthFormatted,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.trending_up,
+                      label: '평균 수심',
+                      value: depthCount > 0 ? '${avgDepth.toStringAsFixed(1)}m' : '-',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.timer,
+                      label: '총 시간',
+                      value: _formatDuration(totalDuration),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (disciplineCounts.isNotEmpty) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '종목별 분포',
+                    style: AppTextStyles.sectionTitle,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: disciplineCounts.entries.map((entry) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface2,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            entry.key.displayName,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primaryBright,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${entry.value}회',
+                            style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    if (duration.inMinutes == 0) return '-';
+    if (duration.inHours > 0) {
+      return '${duration.inHours}시간 ${duration.inMinutes % 60}분';
+    }
+    return '${duration.inMinutes}분';
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface2,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: AppColors.muted),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTextStyles.titleSmall.copyWith(
+              color: AppColors.primaryBright,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterSheet extends StatelessWidget {
+  final Discipline? selectedDiscipline;
+  final ValueChanged<Discipline?> onDisciplineSelected;
+  final VoidCallback onClearFilters;
+
+  const _FilterSheet({
+    required this.selectedDiscipline,
+    required this.onDisciplineSelected,
+    required this.onClearFilters,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.muted,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('필터', style: AppTextStyles.titleSmall),
+                if (selectedDiscipline != null)
+                  GestureDetector(
+                    onTap: onClearFilters,
+                    child: Text(
+                      '초기화',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.coral),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '종목',
+                style: AppTextStyles.sectionTitle,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: Discipline.values.map((discipline) {
+                final isSelected = selectedDiscipline == discipline;
+                return GestureDetector(
+                  onTap: () => onDisciplineSelected(discipline),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.tealDim : AppColors.surface2,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : AppColors.line,
+                      ),
+                    ),
+                    child: Text(
+                      discipline.displayName,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: isSelected ? Colors.white : AppColors.text,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
