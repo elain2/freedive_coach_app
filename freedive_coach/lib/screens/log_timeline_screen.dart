@@ -281,30 +281,8 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '새 로그를 작성해보세요',
+              '아래 버튼을 눌러 새 로그를 작성해보세요',
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: _openNewLog,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add, color: Colors.white, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      '새 로그 작성',
-                      style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
