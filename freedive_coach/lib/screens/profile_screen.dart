@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
+import 'debug_screen.dart';
 import 'stats_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -270,11 +272,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildMenuItem(Icons.help_outline, '도움말', '', onTap: () {
           // TODO: Help screen
         }),
+        if (kDebugMode)
+          _buildMenuItem(
+            Icons.bug_report,
+            '디버그 메뉴',
+            'DEV',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DebugScreen()),
+              );
+            },
+            isDanger: true,
+          ),
       ],
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, String value, {VoidCallback? onTap}) {
+  Widget _buildMenuItem(
+    IconData icon,
+    String title,
+    String value, {
+    VoidCallback? onTap,
+    bool isDanger = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -286,15 +306,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.muted),
+            Icon(icon, size: 20, color: isDanger ? AppColors.coral : AppColors.muted),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(title, style: AppTextStyles.body),
+              child: Text(
+                title,
+                style: AppTextStyles.body.copyWith(
+                  color: isDanger ? AppColors.coral : null,
+                ),
+              ),
             ),
             if (value.isNotEmpty)
-              Text(value, style: AppTextStyles.caption),
+              Container(
+                padding: isDanger
+                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+                    : EdgeInsets.zero,
+                decoration: isDanger
+                    ? BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      )
+                    : null,
+                child: Text(
+                  value,
+                  style: AppTextStyles.caption.copyWith(
+                    color: isDanger ? AppColors.coral : null,
+                    fontWeight: isDanger ? FontWeight.w600 : null,
+                  ),
+                ),
+              ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, size: 18, color: AppColors.muted),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: isDanger ? AppColors.coral : AppColors.muted,
+            ),
           ],
         ),
       ),
