@@ -46,35 +46,38 @@ class CoachScreen extends StatelessWidget {
       },
       child: Container(
         width: double.infinity,
-        height: 200,
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.standard),
           border: Border.all(color: AppColors.line, width: 1.5),
         ),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: AppColors.tealDim,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.videocam, size: 28, color: AppColors.primaryBright),
+              child: const Icon(Icons.auto_awesome, size: 22, color: AppColors.primaryBright),
             ),
-            const SizedBox(height: 16),
-            Text('영상 업로드', style: AppTextStyles.sectionTitle),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                '다이빙 영상을 선택하세요',
-                style: AppTextStyles.caption,
-                textAlign: TextAlign.center,
-              ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('폼 분석 시작', style: AppTextStyles.sectionTitle),
+                const SizedBox(height: 2),
+                Text(
+                  'AI가 자세를 분석해드려요',
+                  style: AppTextStyles.caption,
+                ),
+              ],
             ),
+            const SizedBox(width: 16),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.muted),
           ],
         ),
       ),
