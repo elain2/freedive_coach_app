@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/analysis_result.dart';
 import '../models/discipline.dart';
+import '../services/analysis_storage.dart';
 import '../services/frame_extractor_service.dart';
 import '../services/gemini_service.dart';
 import '../theme/app_theme.dart';
@@ -23,6 +24,7 @@ class AnalysisSetupScreen extends StatefulWidget {
 class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
   final _geminiService = GeminiService();
   final _frameExtractor = FrameExtractorService();
+  final _analysisStorage = AnalysisStorage();
   final _picker = ImagePicker();
 
   Discipline _selectedDiscipline = Discipline.cwt;
@@ -124,6 +126,9 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
       setState(() {
         _progress = 1.0;
       });
+
+      // Save the result to storage
+      await _analysisStorage.saveResult(result);
 
       // Navigate to results
       if (mounted) {

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../models/analysis_result.dart';
 import '../models/discipline.dart';
 import '../models/dive_log.dart';
+import '../services/analysis_storage.dart';
 import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
+import 'analysis_result_screen.dart';
 import 'analysis_setup_screen.dart';
 import 'log_detail_screen.dart';
 import 'new_log_screen.dart';
@@ -20,7 +23,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _logStorage = LogStorage();
+  final _analysisStorage = AnalysisStorage();
   DiveLog? _recentLog;
+  List<AnalysisResult> _recentAnalyses = [];
   int _weekDiveCount = 0;
   double? _weekMaxDepth;
   final int _weekTrainingCount = 0; // TODO: Load from training storage
@@ -39,6 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _recentLog = logs.first;
       });
     }
+
+    // Load recent analyses
+    final analyses = await _analysisStorage.getRecentResults(count: 3);
+    setState(() {
+      _recentAnalyses = analyses;
+    });
 
     // Calculate week stats
     final now = DateTime.now();
@@ -93,6 +104,10 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildTrainingRecommendation(),
           const SizedBox(height: 24),
           _buildQuickActions(),
+          if (_recentAnalyses.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildRecentAnalyses(),
+          ],
           const SizedBox(height: 24),
           _buildWeekStats(),
         ],
@@ -402,6 +417,124 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildRecentAnalyses() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('최근 분석', style: AppTextStyles.sectionTitle),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AnalysisSetupScreen()),
+                );
+              },
+              child: Text(
+                '새 분석',
+                style: AppTextStyles.caption.copyWith(color: AppColors.primary),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 110,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _recentAnalyses.length,
+            itemBuilder: (context, index) {
+              final analysis = _recentAnalyses[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  right: index < _recentAnalyses.length - 1 ? 12 : 0,
+                ),
+                child: _buildAnalysisCard(analysis),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalysisCard(AnalysisResult analysis) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => AnalysisResultScreen(result: analysis),
+          ),
+        );
+      },
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AppBadge(
+                  text: analysis.discipline.displayName,
+                  backgroundColor: AppColors.tealDim,
+                  textColor: Colors.white,
+                ),
+                Text(
+                  _getRelativeDate(analysis.createdAt),
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.muted,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  analysis.averageScore.toStringAsFixed(1),
+                  style: AppTextStyles.titleSmall.copyWith(
+                    fontSize: 28,
+                    color: AppColors.primaryBright,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '/ 5',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _getScoreLabel(analysis.averageScore),
+              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getScoreLabel(double score) {
+    if (score >= 4.5) return '훌륭해요!';
+    if (score >= 4.0) return '좋아요!';
+    if (score >= 3.5) return '괜찮아요';
+    if (score >= 3.0) return '조금 더 연습해요';
+    return '기초부터 다시!';
   }
 
   Widget _buildWeekStats() {
