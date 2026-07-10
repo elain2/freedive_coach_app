@@ -216,22 +216,26 @@ class AnalysisResultScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Container(
-          height: 8,
-          decoration: BoxDecoration(
-            color: AppColors.surface2,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: category.score / 5.0,
-            child: Container(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final barWidth = constraints.maxWidth * (category.score / 5.0);
+            return Container(
+              height: 8,
               decoration: BoxDecoration(
-                color: _getScoreColor(category.score),
+                color: AppColors.surface2,
                 borderRadius: BorderRadius.circular(4),
               ),
-            ),
-          ),
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: barWidth,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _getScoreColor(category.score),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 6),
         Row(
