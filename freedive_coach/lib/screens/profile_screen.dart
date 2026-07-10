@@ -4,6 +4,7 @@ import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
 import 'debug_screen.dart';
+import 'settings_screen.dart';
 import 'stats_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -93,7 +94,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text('마이', style: AppTextStyles.titleLarge),
         GestureDetector(
           onTap: () {
-            // TODO: Settings screen
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
           },
           child: const Icon(Icons.settings, size: 22, color: AppColors.muted),
         ),
