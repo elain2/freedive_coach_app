@@ -1,9 +1,69 @@
 import 'package:flutter/material.dart';
+import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
+import 'stats_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _logStorage = LogStorage();
+  int _totalDives = 0;
+  double? _maxDepth;
+  Duration? _maxDuration;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final logs = await _logStorage.getLogs();
+      double? maxDepth;
+      Duration? maxDuration;
+
+      for (final log in logs) {
+        if (log.depth != null) {
+          if (maxDepth == null || log.depth! > maxDepth) {
+            maxDepth = log.depth;
+          }
+        }
+        if (log.duration != null) {
+          if (maxDuration == null || log.duration! > maxDuration) {
+            maxDuration = log.duration;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _totalDives = logs.length;
+          _maxDepth = maxDepth;
+          _maxDuration = maxDuration;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _formatDuration(Duration? duration) {
+    if (duration == null) return '-';
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +89,12 @@ class ProfileScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text('마이', style: AppTextStyles.titleLarge),
-        const Icon(Icons.settings, size: 22, color: AppColors.muted),
+        GestureDetector(
+          onTap: () {
+            // TODO: Settings screen
+          },
+          child: const Icon(Icons.settings, size: 22, color: AppColors.muted),
+        ),
       ],
     );
   }
@@ -59,7 +124,7 @@ class ProfileScreen extends StatelessWidget {
                 Text('다이버님', style: AppTextStyles.titleSmall),
                 const SizedBox(height: 4),
                 Text(
-                  '프리다이빙 2년차',
+                  '프리다이빙을 즐기는 중',
                   style: AppTextStyles.caption,
                 ),
               ],
@@ -85,24 +150,75 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildStatsCard() {
-    return SurfaceCard(
-      padding: const EdgeInsets.all(16),
-      borderColor: Colors.transparent,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('나의 기록', style: AppTextStyles.sectionTitle),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(child: _buildStatItem('총 다이빙', '127', '회')),
-              Container(width: 1, height: 40, color: AppColors.line),
-              Expanded(child: _buildStatItem('최고 수심', '35', 'm')),
-              Container(width: 1, height: 40, color: AppColors.line),
-              Expanded(child: _buildStatItem('최장 시간', '3:24', '')),
-            ],
-          ),
-        ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const StatsScreen()),
+        );
+      },
+      child: SurfaceCard(
+        padding: const EdgeInsets.all(16),
+        borderColor: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('나의 기록', style: AppTextStyles.sectionTitle),
+                Row(
+                  children: [
+                    Text(
+                      '전체 통계',
+                      style: AppTextStyles.caption.copyWith(color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (_isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      '총 다이빙',
+                      '$_totalDives',
+                      '회',
+                    ),
+                  ),
+                  Container(width: 1, height: 40, color: AppColors.line),
+                  Expanded(
+                    child: _buildStatItem(
+                      '최고 수심',
+                      _maxDepth?.toStringAsFixed(0) ?? '-',
+                      'm',
+                    ),
+                  ),
+                  Container(width: 1, height: 40, color: AppColors.line),
+                  Expanded(
+                    child: _buildStatItem(
+                      '최장 시간',
+                      _formatDuration(_maxDuration),
+                      '',
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -137,35 +253,50 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildMenuSection() {
     return Column(
       children: [
-        _buildMenuItem(Icons.track_changes, '나의 목표', '40m CWT'),
-        _buildMenuItem(Icons.calendar_today, '훈련 스케줄', '주 4회'),
-        _buildMenuItem(Icons.emoji_events, '뱃지 & 업적', '12개 획득'),
-        _buildMenuItem(Icons.notifications_outlined, '알림 설정', ''),
-        _buildMenuItem(Icons.help_outline, '도움말', ''),
+        _buildMenuItem(Icons.track_changes, '나의 목표', '설정하기', onTap: () {
+          // TODO: Goals screen
+        }),
+        _buildMenuItem(Icons.bar_chart, '상세 통계', '', onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const StatsScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.history, '훈련 기록', '', onTap: () {
+          // TODO: Training history
+        }),
+        _buildMenuItem(Icons.notifications_outlined, '알림 설정', '', onTap: () {
+          // TODO: Notification settings
+        }),
+        _buildMenuItem(Icons.help_outline, '도움말', '', onTap: () {
+          // TODO: Help screen
+        }),
       ],
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.line, width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.muted),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(title, style: AppTextStyles.body),
+  Widget _buildMenuItem(IconData icon, String title, String value, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: AppColors.line, width: 1),
           ),
-          if (value.isNotEmpty)
-            Text(value, style: AppTextStyles.caption),
-          const SizedBox(width: 8),
-          const Icon(Icons.chevron_right, size: 18, color: AppColors.muted),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: AppColors.muted),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(title, style: AppTextStyles.body),
+            ),
+            if (value.isNotEmpty)
+              Text(value, style: AppTextStyles.caption),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.muted),
+          ],
+        ),
       ),
     );
   }

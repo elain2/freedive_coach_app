@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../widgets/log_entry_card.dart';
 import 'log_detail_screen.dart';
 import 'new_log_screen.dart';
+import 'stats_screen.dart';
 
 class LogTimelineScreen extends StatefulWidget {
   const LogTimelineScreen({super.key});
@@ -61,18 +62,8 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
   }
 
   void _showStats() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _StatsSheet(
-        stats: _monthlyStats,
-        logs: _logs,
-        month: _selectedMonth,
-        year: _selectedYear,
-      ),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const StatsScreen()),
     );
   }
 
@@ -448,208 +439,6 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _StatsSheet extends StatelessWidget {
-  final MonthlyStats? stats;
-  final List<DiveLog> logs;
-  final int month;
-  final int year;
-
-  const _StatsSheet({
-    required this.stats,
-    required this.logs,
-    required this.month,
-    required this.year,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Calculate discipline breakdown
-    final disciplineCounts = <Discipline, int>{};
-    Duration totalDuration = Duration.zero;
-    double totalDepth = 0;
-    int depthCount = 0;
-
-    for (final log in logs) {
-      disciplineCounts[log.discipline] = (disciplineCounts[log.discipline] ?? 0) + 1;
-      if (log.duration != null) {
-        totalDuration += log.duration!;
-      }
-      if (log.depth != null) {
-        totalDepth += log.depth!;
-        depthCount++;
-      }
-    }
-
-    final avgDepth = depthCount > 0 ? totalDepth / depthCount : 0.0;
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.muted,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('$month월 통계', style: AppTextStyles.titleSmall),
-            const SizedBox(height: 20),
-            if (stats == null || logs.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Text(
-                  '기록이 없습니다',
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
-                ),
-              )
-            else ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.water,
-                      label: '총 다이빙',
-                      value: '${stats!.diveCount}회',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.arrow_downward,
-                      label: '최고 수심',
-                      value: stats!.maxDepthFormatted,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.trending_up,
-                      label: '평균 수심',
-                      value: depthCount > 0 ? '${avgDepth.toStringAsFixed(1)}m' : '-',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.timer,
-                      label: '총 시간',
-                      value: _formatDuration(totalDuration),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              if (disciplineCounts.isNotEmpty) ...[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '종목별 분포',
-                    style: AppTextStyles.sectionTitle,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: disciplineCounts.entries.map((entry) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface2,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            entry.key.displayName,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.primaryBright,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${entry.value}회',
-                            style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDuration(Duration duration) {
-    if (duration.inMinutes == 0) return '-';
-    if (duration.inHours > 0) {
-      return '${duration.inHours}시간 ${duration.inMinutes % 60}분';
-    }
-    return '${duration.inMinutes}분';
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface2,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: AppColors.muted),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: AppTextStyles.titleSmall.copyWith(
-              color: AppColors.primaryBright,
-            ),
-          ),
-        ],
       ),
     );
   }
