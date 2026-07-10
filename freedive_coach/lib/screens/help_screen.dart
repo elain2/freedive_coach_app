@@ -199,7 +199,7 @@ class HelpScreen extends StatelessWidget {
                 context,
                 Icons.chat_bubble_outline,
                 '카카오톡 문의',
-                '@다이빙캣',
+                '@FreediveCoach',
               ),
               const Divider(color: AppColors.line, height: 24),
               _buildContactItem(

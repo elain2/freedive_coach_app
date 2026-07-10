@@ -312,7 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           Text(
-            '다이빙캣',
+            'Freedive Coach',
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
           ),
           const SizedBox(height: 4),
@@ -689,7 +689,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            Text('다이빙캣', style: AppTextStyles.titleSmall),
+            Text('Freedive Coach', style: AppTextStyles.titleSmall),
           ],
         ),
         content: Column(
@@ -705,7 +705,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('빌드: 2024.01', style: AppTextStyles.bodySmall),
             const SizedBox(height: 16),
             Text(
-              '© 2024 다이빙캣 팀',
+              '© 2024 Freedive Coach',
               style: AppTextStyles.caption.copyWith(color: AppColors.muted),
             ),
           ],

@@ -62,7 +62,7 @@ class LegalScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSection('1. 수집하는 개인정보', '''
-다이빙캣 앱은 서비스 제공을 위해 다음 정보를 수집합니다:
+Freedive Coach 앱은 서비스 제공을 위해 다음 정보를 수집합니다:
 
 • 다이빙 로그 데이터 (수심, 시간, 장소 등)
 • 훈련 기록 데이터
@@ -85,7 +85,7 @@ class LegalScreen extends StatelessWidget {
 • 설정에서 직접 데이터를 삭제할 수 있습니다
 '''),
         _buildSection('4. 개인정보의 제3자 제공', '''
-다이빙캣은 사용자의 동의 없이 개인정보를 제3자에게 제공하지 않습니다.
+Freedive Coach는 사용자의 동의 없이 개인정보를 제3자에게 제공하지 않습니다.
 
 단, 다음의 경우는 예외로 합니다:
 • 법령에 의해 요구되는 경우
@@ -120,7 +120,7 @@ class LegalScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSection('1. 서비스 개요', '''
-다이빙캣은 프리다이빙 훈련 및 기록 관리를 위한 앱 서비스입니다.
+Freedive Coach는 프리다이빙 훈련 및 기록 관리를 위한 앱 서비스입니다.
 
 본 서비스는 다음 기능을 제공합니다:
 • 다이빙 로그 기록 및 관리
@@ -145,7 +145,7 @@ class LegalScreen extends StatelessWidget {
 • 서비스 운영을 방해한 경우
 '''),
         _buildSection('4. 면책 조항', '''
-다이빙캣은 다음 사항에 대해 책임지지 않습니다:
+Freedive Coach는 다음 사항에 대해 책임지지 않습니다:
 
 • 사용자의 귀책 사유로 인한 서비스 장애
 • 천재지변 등 불가항력으로 인한 서비스 중단
@@ -155,7 +155,7 @@ class LegalScreen extends StatelessWidget {
 주의: 본 앱은 훈련 보조 도구이며, 실제 다이빙 시에는 반드시 공인된 교육 기관의 지침을 따르고 안전 수칙을 준수하세요.
 '''),
         _buildSection('5. 저작권', '''
-다이빙캣 앱의 모든 콘텐츠에 대한 저작권은 다이빙캣에 있습니다.
+Freedive Coach 앱의 모든 콘텐츠에 대한 저작권은 Freedive Coach에 있습니다.
 
 • 앱 디자인 및 UI
 • 로고 및 브랜드 자산
