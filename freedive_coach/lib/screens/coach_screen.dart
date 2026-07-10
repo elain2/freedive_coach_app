@@ -66,9 +66,13 @@ class CoachScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text('영상 업로드', style: AppTextStyles.sectionTitle),
             const SizedBox(height: 4),
-            Text(
-              '다이빙 영상을 선택하세요',
-              style: AppTextStyles.caption,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                '다이빙 영상을 선택하세요',
+                style: AppTextStyles.caption,
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         ),
