@@ -1,6 +1,6 @@
 {
-    "name": "Dive Coach Cat",
-    "short_name": "Dive Coach Cat",
+    "name": "다이빙캣",
+    "short_name": "다이빙캣",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#03141D",

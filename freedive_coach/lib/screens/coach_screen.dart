@@ -45,6 +45,7 @@ class CoachScreen extends StatelessWidget {
         );
       },
       child: Container(
+        width: double.infinity,
         height: 200,
         decoration: BoxDecoration(
           color: AppColors.surface,

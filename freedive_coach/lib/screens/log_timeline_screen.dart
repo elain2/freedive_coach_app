@@ -124,7 +124,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
           ),
         ),
         Positioned(
-          bottom: 100,
+          bottom: 24,
           right: 20,
           child: _buildFab(),
         ),
@@ -299,7 +299,7 @@ class _LogTimelineScreenState extends State<LogTimelineScreen> {
             isFirst: i == 0,
             onTap: () => _openLogDetail(_logs[i]),
           ),
-          if (i < _logs.length - 1) const LogRopeGap(),
+          if (i < _logs.length - 1) const SizedBox(height: 12),
         ],
       ],
     );

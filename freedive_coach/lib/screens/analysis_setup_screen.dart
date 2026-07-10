@@ -335,13 +335,15 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
               label,
               style: AppTextStyles.bodySmall.copyWith(
                 fontWeight: FontWeight.w700,
-                color: isSelected ? AppColors.primaryBright : AppColors.text,
+                color: isSelected ? Colors.white : AppColors.text,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+              style: AppTextStyles.caption.copyWith(
+                color: isSelected ? AppColors.text : AppColors.muted,
+              ),
             ),
           ],
         ),
