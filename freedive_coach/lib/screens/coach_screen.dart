@@ -13,9 +13,7 @@ class CoachScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
-          const SizedBox(height: 20),
-          _buildUploadSection(context),
+          _buildHeader(context),
           const SizedBox(height: 20),
           _buildRecentAnalysis(context),
         ],
@@ -23,64 +21,38 @@ class CoachScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('AI 코치', style: AppTextStyles.titleLarge),
-        const SizedBox(height: 2),
-        Text(
-          '영상을 올리면 자세를 분석해드려요 \u{1F431}',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUploadSection(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AnalysisSetupScreen()),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.standard),
-          border: Border.all(color: AppColors.line, width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.tealDim,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.auto_awesome, size: 22, color: AppColors.primaryBright),
+            Text('AI 코치', style: AppTextStyles.titleLarge),
+            const SizedBox(height: 2),
+            Text(
+              '영상을 올리면 자세를 분석해드려요 \u{1F431}',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
             ),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('폼 분석 시작', style: AppTextStyles.sectionTitle),
-                const SizedBox(height: 2),
-                Text(
-                  'AI가 자세를 분석해드려요',
-                  style: AppTextStyles.caption,
-                ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            const Icon(Icons.chevron_right, size: 20, color: AppColors.muted),
           ],
         ),
-      ),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AnalysisSetupScreen()),
+            );
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.add, size: 22, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 
