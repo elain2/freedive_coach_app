@@ -62,7 +62,7 @@ class RoundIndicator extends StatelessWidget {
                     color: isCompleted
                         ? AppColors.primaryBright
                         : isCurrent
-                            ? AppColors.primaryBright.withOpacity(0.5)
+                            ? AppColors.primaryBright.withValues(alpha: 0.5)
                             : AppColors.surface,
                     border: Border.all(
                       color: isCompleted || isCurrent

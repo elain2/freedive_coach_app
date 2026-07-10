@@ -84,7 +84,7 @@ class AnalysisResultScreen extends StatelessWidget {
               const SizedBox(width: 8),
               AppBadge(
                 text: result.mode == AnalysisMode.overview ? '전체 분석' : '구간 분석',
-                backgroundColor: Colors.black.withOpacity(0.6),
+                backgroundColor: Colors.black.withValues(alpha: 0.6),
                 textColor: AppColors.text,
               ),
             ],

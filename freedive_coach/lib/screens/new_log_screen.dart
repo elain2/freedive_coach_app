@@ -686,7 +686,7 @@ class _NewLogScreenState extends State<NewLogScreen> {
                           hintStyle: AppTextStyles.bodySmall.copyWith(
                             color: _isListening
                                 ? AppColors.primary
-                                : AppColors.muted.withOpacity(0.5),
+                                : AppColors.muted.withValues(alpha: 0.5),
                           ),
                           border: InputBorder.none,
                           isDense: true,
@@ -843,7 +843,7 @@ class _NewLogScreenState extends State<NewLogScreen> {
               textAlign: TextAlign.right,
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.muted.withOpacity(0.5)),
+                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.muted.withValues(alpha: 0.5)),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
@@ -883,7 +883,7 @@ class _NewLogScreenState extends State<NewLogScreen> {
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 hintText: '0',
-                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.muted.withOpacity(0.5)),
+                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.muted.withValues(alpha: 0.5)),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
@@ -901,7 +901,7 @@ class _NewLogScreenState extends State<NewLogScreen> {
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 hintText: '0',
-                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.muted.withOpacity(0.5)),
+                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.muted.withValues(alpha: 0.5)),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
@@ -928,7 +928,7 @@ class _NewLogScreenState extends State<NewLogScreen> {
         width: double.infinity,
         height: 52,
         decoration: BoxDecoration(
-          color: _isSaving ? AppColors.primary.withOpacity(0.5) : AppColors.primary,
+          color: _isSaving ? AppColors.primary.withValues(alpha: 0.5) : AppColors.primary,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Center(

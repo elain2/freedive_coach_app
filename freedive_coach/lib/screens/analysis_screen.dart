@@ -77,7 +77,7 @@ class AnalysisScreen extends StatelessWidget {
               const SizedBox(width: 8),
               AppBadge(
                 text: 'AI 분석 완료',
-                backgroundColor: Colors.black.withOpacity(0.6),
+                backgroundColor: Colors.black.withValues(alpha: 0.6),
                 textColor: AppColors.text,
               ),
             ],
@@ -86,7 +86,7 @@ class AnalysisScreen extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.text.withOpacity(0.18),
+              color: AppColors.text.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.play_arrow, color: Colors.white, size: 24),

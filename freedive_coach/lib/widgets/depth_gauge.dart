@@ -70,7 +70,7 @@ class DepthGauge extends StatelessWidget {
                   child: Text(
                     '${depth}m',
                     style: AppTextStyles.caption.copyWith(
-                      color: AppColors.muted.withOpacity(0.6),
+                      color: AppColors.muted.withValues(alpha: 0.6),
                       fontSize: 10,
                     ),
                   ),
@@ -78,7 +78,7 @@ class DepthGauge extends StatelessWidget {
                 Expanded(
                   child: Container(
                     height: 1,
-                    color: AppColors.line.withOpacity(0.3),
+                    color: AppColors.line.withValues(alpha: 0.3),
                   ),
                 ),
               ],
@@ -101,9 +101,9 @@ class DepthGauge extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: color.withOpacity(0.5)),
+              border: Border.all(color: color.withValues(alpha: 0.5)),
             ),
             child: Text(
               '$label ${depth}m',
@@ -133,11 +133,11 @@ class DepthGauge extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.primaryBright.withOpacity(0.2),
+            color: AppColors.primaryBright.withValues(alpha: 0.2),
             border: Border.all(color: AppColors.primaryBright, width: 2),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryBright.withOpacity(0.3),
+                color: AppColors.primaryBright.withValues(alpha: 0.3),
                 blurRadius: 10,
                 spreadRadius: 2,
               ),

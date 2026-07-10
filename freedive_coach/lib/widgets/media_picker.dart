@@ -126,7 +126,7 @@ class _MediaThumbnail extends StatelessWidget {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: AppColors.coral.withOpacity(0.9),
+                    color: AppColors.coral.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -144,7 +144,7 @@ class _MediaThumbnail extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -365,7 +365,7 @@ class MediaPreviewList extends StatelessWidget {
                         width: 20,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: AppColors.coral.withOpacity(0.9),
+                          color: AppColors.coral.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

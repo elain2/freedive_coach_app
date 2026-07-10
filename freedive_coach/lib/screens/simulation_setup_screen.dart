@@ -229,7 +229,7 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
         const SizedBox(height: 12),
         SurfaceCard(
           padding: const EdgeInsets.all(16),
-          borderColor: hasWarning ? Colors.orange.withOpacity(0.5) : Colors.transparent,
+          borderColor: hasWarning ? Colors.orange.withValues(alpha: 0.5) : Colors.transparent,
           child: Column(
             children: [
               _buildMilestoneRow('마우스필 수심', _profile.mouthfillDepth, (v) {

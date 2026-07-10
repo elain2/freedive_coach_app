@@ -230,7 +230,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primaryBright.withOpacity(0.2),
+        color: AppColors.primaryBright.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primaryBright),
       ),
@@ -259,7 +259,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
           color: AppColors.primaryBright,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryBright.withOpacity(0.3),
+              color: AppColors.primaryBright.withValues(alpha: 0.3),
               blurRadius: 20,
               spreadRadius: 5,
             ),

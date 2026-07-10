@@ -61,7 +61,7 @@ class _TrainingHistoryScreenState extends State<TrainingHistoryScreen> {
           Icon(
             Icons.history,
             size: 64,
-            color: AppColors.muted.withOpacity(0.5),
+            color: AppColors.muted.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(

@@ -477,7 +477,7 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: const Icon(Icons.play_arrow, color: Colors.white, size: 28),
@@ -492,9 +492,9 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.coral.withOpacity(0.1),
+        color: AppColors.coral.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.coral.withOpacity(0.3)),
+        border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

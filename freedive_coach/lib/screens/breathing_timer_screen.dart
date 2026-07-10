@@ -191,7 +191,7 @@ class _BreathingTimerScreenState extends State<BreathingTimerScreen>
           color: AppColors.primaryBright,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryBright.withOpacity(0.3),
+              color: AppColors.primaryBright.withValues(alpha: 0.3),
               blurRadius: 20,
               spreadRadius: 5,
             ),

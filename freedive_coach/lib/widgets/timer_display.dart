@@ -32,7 +32,7 @@ class TimerDisplay extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: phaseColor.withOpacity(0.2),
+            color: phaseColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -63,7 +63,7 @@ class TimerDisplay extends StatelessWidget {
                 fontFamily: 'monospace',
                 fontSize: 36,
                 fontWeight: FontWeight.w300,
-                color: phaseColor.withOpacity(0.6),
+                color: phaseColor.withValues(alpha: 0.6),
               ),
             ),
           ],
