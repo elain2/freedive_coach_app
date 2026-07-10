@@ -4,6 +4,7 @@ import '../models/discipline.dart';
 import '../models/dive_log.dart';
 import '../services/analysis_storage.dart';
 import '../services/log_storage.dart';
+import '../services/training_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
 import 'analysis_result_screen.dart';
@@ -24,11 +25,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _logStorage = LogStorage();
   final _analysisStorage = AnalysisStorage();
+  final _trainingStorage = TrainingStorage();
   DiveLog? _recentLog;
   List<AnalysisResult> _recentAnalyses = [];
   int _weekDiveCount = 0;
   double? _weekMaxDepth;
-  final int _weekTrainingCount = 0; // TODO: Load from training storage
+  int _weekTrainingCount = 0;
 
   @override
   void initState() {
@@ -66,9 +68,15 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
+    // Calculate week training count
+    final trainings = await _trainingStorage.getSessions();
+    final weekTrainings = trainings.where((t) =>
+        t.startedAt.isAfter(weekStart.subtract(const Duration(days: 1)))).toList();
+
     setState(() {
       _weekDiveCount = weekLogs.length;
       _weekMaxDepth = maxDepth;
+      _weekTrainingCount = weekTrainings.length;
     });
   }
 

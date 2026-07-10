@@ -4,8 +4,12 @@ import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
 import 'debug_screen.dart';
+import 'goals_screen.dart';
+import 'help_screen.dart';
+import 'notification_settings_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
+import 'training_history_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -259,7 +263,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         _buildMenuItem(Icons.track_changes, '나의 목표', '설정하기', onTap: () {
-          // TODO: Goals screen
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const GoalsScreen()),
+          );
         }),
         _buildMenuItem(Icons.bar_chart, '상세 통계', '', onTap: () {
           Navigator.of(context).push(
@@ -267,13 +273,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }),
         _buildMenuItem(Icons.history, '훈련 기록', '', onTap: () {
-          // TODO: Training history
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const TrainingHistoryScreen()),
+          );
         }),
         _buildMenuItem(Icons.notifications_outlined, '알림 설정', '', onTap: () {
-          // TODO: Notification settings
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+          );
         }),
         _buildMenuItem(Icons.help_outline, '도움말', '', onTap: () {
-          // TODO: Help screen
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const HelpScreen()),
+          );
         }),
         if (kDebugMode)
           _buildMenuItem(
