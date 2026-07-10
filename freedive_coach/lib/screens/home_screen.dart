@@ -1,9 +1,83 @@
 import 'package:flutter/material.dart';
+import '../models/discipline.dart';
+import '../models/dive_log.dart';
+import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
+import 'analysis_setup_screen.dart';
+import 'log_detail_screen.dart';
+import 'new_log_screen.dart';
+import 'simulation_setup_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  final void Function(int)? onTabChange;
+
+  const HomeScreen({super.key, this.onTabChange});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _logStorage = LogStorage();
+  DiveLog? _recentLog;
+  int _weekDiveCount = 0;
+  double? _weekMaxDepth;
+  final int _weekTrainingCount = 0; // TODO: Load from training storage
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Load recent log
+    final logs = await _logStorage.getLogs();
+    if (logs.isNotEmpty) {
+      setState(() {
+        _recentLog = logs.first;
+      });
+    }
+
+    // Calculate week stats
+    final now = DateTime.now();
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final weekLogs = logs.where((log) =>
+        log.diveDate.isAfter(weekStart.subtract(const Duration(days: 1)))).toList();
+
+    double? maxDepth;
+    for (final log in weekLogs) {
+      if (log.depth != null) {
+        if (maxDepth == null || log.depth! > maxDepth) {
+          maxDepth = log.depth;
+        }
+      }
+    }
+
+    setState(() {
+      _weekDiveCount = weekLogs.length;
+      _weekMaxDepth = maxDepth;
+    });
+  }
+
+  String _getTodayString() {
+    final now = DateTime.now();
+    final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    return '${now.month}월 ${now.day}일 ${weekdays[now.weekday - 1]}요일';
+  }
+
+  String _getRelativeDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final logDate = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(logDate).inDays;
+
+    if (diff == 0) return '오늘';
+    if (diff == 1) return '어제';
+    if (diff < 7) return '$diff일 전';
+    return '${date.month}/${date.day}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +110,7 @@ class HomeScreen extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '7월 7일 화요일',
+          _getTodayString(),
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
         ),
       ],
@@ -44,148 +118,201 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildRecentLogCard() {
-    return SurfaceCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    if (_recentLog == null) {
+      return GestureDetector(
+        onTap: () async {
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const NewLogScreen()),
+          );
+          if (result == true) _loadData();
+        },
+        child: SurfaceCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
             children: [
+              const Icon(Icons.add_circle_outline, size: 40, color: AppColors.muted),
+              const SizedBox(height: 12),
               Text(
-                '최근 로그 · 어제',
-                style: AppTextStyles.caption,
+                '아직 로그가 없어요',
+                style: AppTextStyles.sectionTitle.copyWith(color: AppColors.muted),
               ),
-              const AppBadge(text: 'CWT'),
+              const SizedBox(height: 4),
+              Text(
+                '첫 다이빙 로그를 작성해보세요',
+                style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+              ),
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        '32',
-                        style: AppTextStyles.titleLarge.copyWith(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+
+    final log = _recentLog!;
+    final primaryValue = log.primaryMetric?.toStringAsFixed(0) ?? '-';
+    final unit = log.discipline.primaryUnit;
+
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(builder: (_) => LogDetailScreen(log: log)),
+        );
+        if (result == true) _loadData();
+      },
+      child: SurfaceCard(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '최근 로그 · ${_getRelativeDate(log.diveDate)}',
+                  style: AppTextStyles.caption,
+                ),
+                AppBadge(text: log.discipline.displayName),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          primaryValue,
+                          style: AppTextStyles.titleLarge.copyWith(
+                            fontSize: 48,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
+                        const SizedBox(width: 4),
+                        Text(
+                          unit,
+                          style: AppTextStyles.titleSmall.copyWith(
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (log.location != null) ...[
+                      const SizedBox(height: 6),
                       Text(
-                        'm',
-                        style: AppTextStyles.titleSmall.copyWith(
+                        log.location!,
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.muted,
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '제주 서귀포',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.tealDim,
-                  borderRadius: BorderRadius.circular(22),
+                  ],
                 ),
-                child: const Center(
-                  child: Text(
-                    '\u{1F431}',
-                    style: TextStyle(fontSize: 20),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.tealDim,
+                    borderRadius: BorderRadius.circular(22),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.surface2,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '\u{1F442} 귀 컨디션: 오른쪽 살짝 타이트했어요',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.muted,
+                  child: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.white,
+                    size: 24,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            if (log.condition != null) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surface2,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '\u{1F442} ${log.condition}',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.muted,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTrainingRecommendation() {
-    return TealCard(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
+    return GestureDetector(
+      onTap: () {
+        // Navigate to training tab
+        widget.onTabChange?.call(3);
+      },
+      child: TealCard(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.air,
+                color: AppColors.primaryBright,
+                size: 22,
+              ),
             ),
-            child: const Icon(
-              Icons.air,
-              color: AppColors.primaryBright,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '오늘의 훈련 추천',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primaryBright,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '오늘의 훈련 추천',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primaryBright,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'CO\u2082 테이블 8라운드',
-                  style: AppTextStyles.sectionTitle,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '예상 12:00',
-                  style: AppTextStyles.monoSmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 3),
+                  Text(
+                    'CO\u2082 테이블 8라운드',
+                    style: AppTextStyles.sectionTitle,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text(
+                    '예상 12:00',
+                    style: AppTextStyles.monoSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Icon(
-            Icons.chevron_right,
-            color: AppColors.muted,
-            size: 20,
-          ),
-        ],
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.muted,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -195,61 +322,118 @@ class HomeScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _buildActionCard(Icons.mic, '새 로그', '음성으로 기록')),
+            Expanded(
+              child: _buildActionCard(
+                Icons.mic,
+                '새 로그',
+                '음성으로 기록',
+                onTap: () async {
+                  final result = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(builder: (_) => const NewLogScreen()),
+                  );
+                  if (result == true) _loadData();
+                },
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildActionCard(Icons.videocam, '영상 분석', 'AI 코칭')),
+            Expanded(
+              child: _buildActionCard(
+                Icons.videocam,
+                '영상 분석',
+                'AI 코칭',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AnalysisSetupScreen()),
+                  );
+                },
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildActionCard(Icons.air, '호흡 훈련', 'CO\u2082/O\u2082')),
+            Expanded(
+              child: _buildActionCard(
+                Icons.air,
+                '호흡 훈련',
+                'CO\u2082/O\u2082',
+                onTap: () {
+                  widget.onTabChange?.call(3);
+                },
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildActionCard(Icons.play_arrow, '시뮬레이션', '멘탈 다이브')),
+            Expanded(
+              child: _buildActionCard(
+                Icons.play_arrow,
+                '시뮬레이션',
+                '멘탈 다이브',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SimulationSetupScreen()),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(IconData icon, String title, String subtitle) {
-    return SurfaceCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.primaryBright, size: 24),
-          const SizedBox(height: 12),
-          Text(title, style: AppTextStyles.sectionTitle),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: AppTextStyles.caption,
-          ),
-        ],
+  Widget _buildActionCard(IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SurfaceCard(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: AppColors.primaryBright, size: 24),
+            const SizedBox(height: 12),
+            Text(title, style: AppTextStyles.sectionTitle),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: AppTextStyles.caption,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildWeekStats() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('이번 주', style: AppTextStyles.sectionTitle),
-        const SizedBox(height: 10),
-        SurfaceCard(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Row(
-            children: [
-              Expanded(child: _buildStatItem('다이빙', '8', '회')),
-              Container(width: 1, height: 32, color: AppColors.line),
-              Expanded(child: _buildStatItem('최고 수심', '32', 'm')),
-              Container(width: 1, height: 32, color: AppColors.line),
-              Expanded(child: _buildStatItem('훈련', '4', '회')),
-            ],
+    return GestureDetector(
+      onTap: () {
+        widget.onTabChange?.call(1); // Navigate to log tab
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('이번 주', style: AppTextStyles.sectionTitle),
+          const SizedBox(height: 10),
+          SurfaceCard(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(
+              children: [
+                Expanded(child: _buildStatItem('다이빙', '$_weekDiveCount', '회')),
+                Container(width: 1, height: 32, color: AppColors.line),
+                Expanded(
+                  child: _buildStatItem(
+                    '최고 수심',
+                    _weekMaxDepth?.toStringAsFixed(0) ?? '-',
+                    'm',
+                  ),
+                ),
+                Container(width: 1, height: 32, color: AppColors.line),
+                Expanded(child: _buildStatItem('훈련', '$_weekTrainingCount', '회')),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
