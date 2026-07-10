@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/rendering.dart';
 import 'package:path/path.dart' as path;
+import 'package:video_thumbnail/video_thumbnail.dart' as vt;
 
 /// Result of frame extraction
 class ExtractResult {
@@ -103,6 +105,93 @@ class FrameExtractorService {
   Future<String> readImageAsBase64(File file) async {
     final bytes = await file.readAsBytes();
     return base64Encode(bytes);
+  }
+
+  /// Extract frames from a video file
+  Future<ExtractResult> extractFromVideo(
+    File videoFile, {
+    int frameCount = 8,
+    void Function(int done, int total)? onProgress,
+  }) async {
+    if (kIsWeb) {
+      throw Exception('웹에서는 동영상 분석을 지원하지 않습니다. 모바일 앱을 이용해주세요.');
+    }
+
+    final frames = <String>[];
+
+    // Get video duration (approximate based on file size for now)
+    // In a real app, you'd use video_player to get actual duration
+    final fileSizeInMb = videoFile.lengthSync() / (1024 * 1024);
+    final estimatedDuration = fileSizeInMb * 10; // rough estimate: 10 sec per MB
+
+    // Determine frame count based on estimated duration
+    final targetFrames = frameCountFor(estimatedDuration);
+    final actualFrameCount = frameCount > 0 ? frameCount : targetFrames;
+
+    // Calculate time positions for each frame
+    final positions = <int>[];
+    final intervalMs = (estimatedDuration * 1000 / (actualFrameCount + 1)).round();
+
+    for (int i = 1; i <= actualFrameCount; i++) {
+      positions.add(intervalMs * i);
+    }
+
+    // Extract frames at each position
+    for (int i = 0; i < positions.length; i++) {
+      try {
+        final uint8list = await vt.VideoThumbnail.thumbnailData(
+          video: videoFile.path,
+          imageFormat: vt.ImageFormat.JPEG,
+          maxWidth: maxEdge,
+          quality: jpegQuality,
+          timeMs: positions[i],
+        );
+
+        if (uint8list != null) {
+          frames.add(base64Encode(uint8list));
+        }
+      } catch (e) {
+        // Skip frames that fail to extract
+      }
+      onProgress?.call(i + 1, positions.length);
+    }
+
+    if (frames.isEmpty) {
+      // Try to get at least one frame (thumbnail)
+      final thumbnail = await vt.VideoThumbnail.thumbnailData(
+        video: videoFile.path,
+        imageFormat: vt.ImageFormat.JPEG,
+        maxWidth: maxEdge,
+        quality: jpegQuality,
+      );
+      if (thumbnail != null) {
+        frames.add(base64Encode(thumbnail));
+      }
+    }
+
+    if (frames.isEmpty) {
+      throw Exception('동영상에서 프레임을 추출할 수 없습니다');
+    }
+
+    return ExtractResult(
+      frames: frames,
+      thumbnail: frames[0],
+      durationSeconds: estimatedDuration,
+      frameCount: frames.length,
+    );
+  }
+
+  /// Get video thumbnail
+  Future<Uint8List?> getVideoThumbnail(String videoPath) async {
+    if (kIsWeb) {
+      return null;
+    }
+    return await vt.VideoThumbnail.thumbnailData(
+      video: videoPath,
+      imageFormat: vt.ImageFormat.JPEG,
+      maxWidth: maxEdge,
+      quality: jpegQuality,
+    );
   }
 
   /// Check if a file is a video

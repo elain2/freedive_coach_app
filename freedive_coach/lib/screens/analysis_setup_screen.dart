@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/analysis_result.dart';
 import '../models/discipline.dart';
@@ -24,7 +27,8 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
 
   Discipline _selectedDiscipline = Discipline.cwt;
   AnalysisMode _analysisMode = AnalysisMode.overview;
-  List<XFile> _selectedFiles = [];
+  XFile? _selectedVideo;
+  Uint8List? _videoThumbnail;
   bool _isAnalyzing = false;
   String? _errorMessage;
   double _progress = 0;
@@ -32,23 +36,9 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
   @override
   void initState() {
     super.initState();
-    // In production, load API key from secure storage or environment
-    // For testing, you would call: _geminiService.setApiKey('your-api-key');
-  }
-
-  Future<void> _pickImages() async {
-    try {
-      final images = await _picker.pickMultiImage();
-      if (images.isNotEmpty) {
-        setState(() {
-          _selectedFiles = images.take(12).toList();
-          _errorMessage = null;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = '이미지 선택 실패: $e';
-      });
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey != null && apiKey.isNotEmpty) {
+      _geminiService.setApiKey(apiKey);
     }
   }
 
@@ -57,9 +47,18 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
       final video = await _picker.pickVideo(source: ImageSource.gallery);
       if (video != null) {
         setState(() {
-          _selectedFiles = [video];
-          _errorMessage = '동영상 분석은 아직 준비 중입니다. 이미지를 선택해주세요.';
+          _selectedVideo = video;
+          _errorMessage = null;
+          _videoThumbnail = null;
         });
+
+        // Generate thumbnail
+        final thumbnail = await _frameExtractor.getVideoThumbnail(video.path);
+        if (mounted && thumbnail != null) {
+          setState(() {
+            _videoThumbnail = thumbnail;
+          });
+        }
       }
     } catch (e) {
       setState(() {
@@ -69,9 +68,9 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
   }
 
   Future<void> _startAnalysis() async {
-    if (_selectedFiles.isEmpty) {
+    if (_selectedVideo == null) {
       setState(() {
-        _errorMessage = '분석할 이미지를 선택해주세요.';
+        _errorMessage = '분석할 동영상을 선택해주세요.';
       });
       return;
     }
@@ -98,10 +97,10 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
     });
 
     try {
-      // Extract frames from images
-      final imageFiles = _selectedFiles.map((f) => File(f.path)).toList();
-      final extractResult = await _frameExtractor.extractFromImages(
-        imageFiles,
+      // Extract frames from video
+      final videoFile = File(_selectedVideo!.path);
+      final extractResult = await _frameExtractor.extractFromVideo(
+        videoFile,
         onProgress: (done, total) {
           setState(() {
             _progress = done / total * 0.5; // First 50% for extraction
@@ -243,7 +242,7 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '다이빙 영상이나 사진을 업로드하면 AIDA 기준으로 폼을 분석해드려요.',
+                  '다이빙 영상을 업로드하면 AIDA 기준으로 폼을 분석해드려요.',
                   style: AppTextStyles.caption.copyWith(color: AppColors.muted),
                 ),
               ],
@@ -351,18 +350,48 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
   }
 
   Widget _buildMediaSection() {
+    if (kIsWeb) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.phone_android, color: AppColors.primaryBright, size: 40),
+            const SizedBox(height: 12),
+            Text(
+              '모바일 앱 전용 기능',
+              style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '동영상 분석은 iOS/Android 앱에서만 사용 가능합니다.',
+              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('미디어', style: AppTextStyles.sectionTitle),
+        Text('동영상', style: AppTextStyles.sectionTitle),
         const SizedBox(height: 10),
-        if (_selectedFiles.isEmpty) ...[
+        if (_selectedVideo == null) ...[
           _buildMediaPicker(),
         ] else ...[
           _buildSelectedMedia(),
           const SizedBox(height: 12),
           GestureDetector(
-            onTap: () => setState(() => _selectedFiles = []),
+            onTap: () => setState(() {
+              _selectedVideo = null;
+              _videoThumbnail = null;
+            }),
             child: Text(
               '다시 선택',
               style: AppTextStyles.caption.copyWith(color: AppColors.primary),
@@ -374,96 +403,80 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
   }
 
   Widget _buildMediaPicker() {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: _pickImages,
-            child: Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.photo_library, color: AppColors.muted, size: 28),
-                  const SizedBox(height: 8),
-                  Text(
-                    '사진 선택',
-                    style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    return GestureDetector(
+      onTap: _pickVideo,
+      child: Container(
+        height: 140,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.line),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: GestureDetector(
-            onTap: _pickVideo,
-            child: Container(
-              height: 100,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.line),
+                color: AppColors.tealDim,
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.videocam, color: AppColors.muted, size: 28),
-                  const SizedBox(height: 8),
-                  Text(
-                    '동영상 선택',
-                    style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                  ),
-                  Text(
-                    '(준비중)',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.muted,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
+              child: const Icon(Icons.videocam, color: AppColors.primaryBright, size: 28),
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              '동영상 선택',
+              style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '다이빙 영상을 선택해주세요',
+              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildSelectedMedia() {
-    return SizedBox(
-      height: 80,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _selectedFiles.length,
-        itemBuilder: (context, index) {
-          final file = _selectedFiles[index];
-          return Padding(
-            padding: EdgeInsets.only(right: index < _selectedFiles.length - 1 ? 12 : 0),
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: AppColors.surface2,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.file(
-                File(file.path),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Center(
-                  child: Icon(Icons.broken_image, color: AppColors.muted),
-                ),
+    return Container(
+      height: 140,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: AppColors.surface2,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_videoThumbnail != null)
+            Image.memory(
+              _videoThumbnail!,
+              fit: BoxFit.cover,
+            )
+          else
+            const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary,
               ),
             ),
-          );
-        },
+          Center(
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(Icons.play_arrow, color: Colors.white, size: 28),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -509,7 +522,8 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
   }
 
   Widget _buildAnalyzeButton() {
-    final canAnalyze = _selectedFiles.isNotEmpty &&
+    final canAnalyze = !kIsWeb &&
+        _selectedVideo != null &&
         !_isAnalyzing &&
         Rubric.supportedDisciplines.contains(_selectedDiscipline);
 
