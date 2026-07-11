@@ -1,14 +1,78 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
 import '../models/analysis_result.dart';
 import '../models/discipline.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
 
-class AnalysisResultScreen extends StatelessWidget {
+class AnalysisResultScreen extends StatefulWidget {
   final AnalysisResult result;
 
   const AnalysisResultScreen({super.key, required this.result});
+
+  @override
+  State<AnalysisResultScreen> createState() => _AnalysisResultScreenState();
+}
+
+class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
+  VideoPlayerController? _videoController;
+  bool _isVideoInitialized = false;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    if (widget.result.videoPath != null && widget.result.videoPath!.isNotEmpty) {
+      final file = File(widget.result.videoPath!);
+      if (await file.exists()) {
+        _videoController = VideoPlayerController.file(file);
+        try {
+          await _videoController!.initialize();
+          _videoController!.addListener(_videoListener);
+          if (mounted) {
+            setState(() {
+              _isVideoInitialized = true;
+            });
+          }
+        } catch (e) {
+          debugPrint('Video init error: $e');
+        }
+      }
+    }
+  }
+
+  void _videoListener() {
+    if (_videoController != null && mounted) {
+      final isPlaying = _videoController!.value.isPlaying;
+      if (isPlaying != _isPlaying) {
+        setState(() {
+          _isPlaying = isPlaying;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.removeListener(_videoListener);
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayPause() {
+    if (_videoController == null) return;
+    if (_videoController!.value.isPlaying) {
+      _videoController!.pause();
+    } else {
+      _videoController!.play();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +87,10 @@ class AnalysisResultScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: Column(
                   children: [
+                    if (_isVideoInitialized || widget.result.videoPath != null)
+                      _buildVideoCard(),
+                    if (_isVideoInitialized || widget.result.videoPath != null)
+                      const SizedBox(height: 16),
                     _buildOverallCard(),
                     const SizedBox(height: 16),
                     _buildSummaryCard(),
@@ -61,6 +129,126 @@ class AnalysisResultScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildVideoCard() {
+    return GestureDetector(
+      onTap: _isVideoInitialized ? _togglePlayPause : null,
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.standard),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF14405F), Color(0xFF071522)],
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_isVideoInitialized && _videoController != null)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
+              )
+            else
+              const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primaryBright,
+                ),
+              ),
+            // Play/Pause overlay
+            if (_isVideoInitialized)
+              AnimatedOpacity(
+                opacity: _isPlaying ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: Center(
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            // Top badges
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Row(
+                children: [
+                  AppBadge(
+                    text: widget.result.discipline.displayName,
+                    backgroundColor: AppColors.primary,
+                    textColor: Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  AppBadge(
+                    text: widget.result.mode == AnalysisMode.overview ? '전체 분석' : '구간 분석',
+                    backgroundColor: Colors.black.withValues(alpha: 0.6),
+                    textColor: AppColors.text,
+                  ),
+                ],
+              ),
+            ),
+            // Video progress bar
+            if (_isVideoInitialized && _videoController != null)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: VideoProgressIndicator(
+                  _videoController!,
+                  allowScrubbing: true,
+                  colors: const VideoProgressColors(
+                    playedColor: AppColors.primaryBright,
+                    bufferedColor: AppColors.surface2,
+                    backgroundColor: AppColors.surface,
+                  ),
+                ),
+              ),
+            // Duration
+            if (_isVideoInitialized && _videoController != null)
+              Positioned(
+                bottom: 8,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _formatDuration(_videoController!.value.duration),
+                    style: AppTextStyles.caption.copyWith(color: Colors.white),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
   Widget _buildOverallCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -75,28 +263,12 @@ class AnalysisResultScreen extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            children: [
-              AppBadge(
-                text: result.discipline.displayName,
-                backgroundColor: AppColors.primary,
-                textColor: Colors.white,
-              ),
-              const SizedBox(width: 8),
-              AppBadge(
-                text: result.mode == AnalysisMode.overview ? '전체 분석' : '구간 분석',
-                backgroundColor: Colors.black.withValues(alpha: 0.6),
-                textColor: AppColors.text,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                result.averageScore.toStringAsFixed(1),
+                widget.result.averageScore.toStringAsFixed(1),
                 style: AppTextStyles.titleLarge.copyWith(fontSize: 56),
               ),
               const SizedBox(width: 4),
@@ -108,7 +280,7 @@ class AnalysisResultScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _getScoreLabel(result.averageScore),
+            _getScoreLabel(widget.result.averageScore),
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.primaryBright),
           ),
         ],
@@ -156,7 +328,7 @@ class AnalysisResultScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  result.overall,
+                  widget.result.overall,
                   style: AppTextStyles.bodySmall.copyWith(height: 1.55),
                 ),
               ],
@@ -176,7 +348,7 @@ class AnalysisResultScreen extends StatelessWidget {
         children: [
           Text('항목별 점수', style: AppTextStyles.sectionTitle),
           const SizedBox(height: 14),
-          ...result.categories.map((category) => Padding(
+          ...widget.result.categories.map((category) => Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: _buildCategoryRow(category),
               )),
@@ -263,7 +435,7 @@ class AnalysisResultScreen extends StatelessWidget {
   }
 
   Widget _buildTipsCard() {
-    final tips = result.categories
+    final tips = widget.result.categories
         .where((c) => c.tip.isNotEmpty)
         .map((c) => c.tip)
         .toList();
@@ -320,7 +492,7 @@ class AnalysisResultScreen extends StatelessWidget {
   }
 
   Widget _buildHookCard(BuildContext context) {
-    if (result.hook.isEmpty) return const SizedBox.shrink();
+    if (widget.result.hook.isEmpty) return const SizedBox.shrink();
 
     return SurfaceCard(
       padding: const EdgeInsets.all(16),
@@ -350,7 +522,7 @@ class AnalysisResultScreen extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: result.hook));
+                        Clipboard.setData(ClipboardData(text: widget.result.hook));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('클립보드에 복사되었습니다')),
                         );
@@ -361,7 +533,7 @@ class AnalysisResultScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '"${result.hook}"',
+                  '"${widget.result.hook}"',
                   style: AppTextStyles.body.copyWith(
                     fontWeight: FontWeight.w700,
                     height: 1.5,

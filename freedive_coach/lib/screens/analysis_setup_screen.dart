@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/analysis_result.dart';
 import '../models/discipline.dart';
 import '../services/analysis_storage.dart';
@@ -34,6 +36,7 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
   bool _isAnalyzing = false;
   String? _errorMessage;
   double _progress = 0;
+  Timer? _progressTimer;
 
   @override
   void initState() {
@@ -42,6 +45,12 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
     if (apiKey != null && apiKey.isNotEmpty) {
       _geminiService.setApiKey(apiKey);
     }
+  }
+
+  @override
+  void dispose() {
+    _progressTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _pickVideo() async {
@@ -67,6 +76,30 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
         _errorMessage = '동영상 선택 실패: $e';
       });
     }
+  }
+
+  void _startProgressAnimation() {
+    _progressTimer?.cancel();
+    _progress = 0;
+    // Animate from 0% to 95% with diminishing speed
+    // Feels natural: fast at start, slows down as it approaches completion
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
+      if (!mounted || _progress >= 0.95) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        // Slow down as we approach 0.95
+        final remaining = 0.95 - _progress;
+        final increment = remaining * 0.025; // 2.5% of remaining each tick
+        _progress = (_progress + increment).clamp(0.0, 0.95);
+      });
+    });
+  }
+
+  void _stopProgressAnimation() {
+    _progressTimer?.cancel();
+    _progressTimer = null;
   }
 
   Future<void> _startAnalysis() async {
@@ -99,28 +132,47 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
     });
 
     try {
-      // Extract frames from video
+      // Start fake progress animation immediately
+      _startProgressAnimation();
+
+      // Extract frames from video (0% ~ 20%)
       final videoFile = File(_selectedVideo!.path);
       final extractResult = await _frameExtractor.extractFromVideo(
         videoFile,
         onProgress: (done, total) {
-          setState(() {
-            _progress = done / total * 0.5; // First 50% for extraction
-          });
+          // Don't update progress here - let animation handle it
         },
       );
 
-      setState(() {
-        _progress = 0.5;
-      });
-
       // Call Gemini API
       final requestId = DateTime.now().microsecondsSinceEpoch.toString();
-      final result = await _geminiService.analyzeFrames(
+      final apiResult = await _geminiService.analyzeFrames(
         requestId: requestId,
         discipline: _selectedDiscipline,
         mode: _analysisMode,
         frames: extractResult.frames,
+      );
+
+      // Stop fake progress
+      _stopProgressAnimation();
+
+      // Save thumbnail to file
+      String? thumbnailPath;
+      if (_videoThumbnail != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final thumbnailDir = Directory('${appDir.path}/thumbnails');
+        if (!await thumbnailDir.exists()) {
+          await thumbnailDir.create(recursive: true);
+        }
+        final thumbnailFile = File('${thumbnailDir.path}/${apiResult.id}.jpg');
+        await thumbnailFile.writeAsBytes(_videoThumbnail!);
+        thumbnailPath = thumbnailFile.path;
+      }
+
+      // Add video and thumbnail paths to result
+      final result = apiResult.copyWith(
+        videoPath: _selectedVideo!.path,
+        thumbnailPath: thumbnailPath,
       );
 
       setState(() {
@@ -139,6 +191,7 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
         );
       }
     } catch (e) {
+      _stopProgressAnimation();
       setState(() {
         _errorMessage = '분석 실패: $e';
       });

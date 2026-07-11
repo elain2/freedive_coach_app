@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/discipline.dart';
 import '../models/dive_log.dart';
 import '../models/media_attachment.dart';
 import '../services/ai_parsing_service.dart';
+import '../services/gemini_stt_service.dart';
 import '../services/log_storage.dart';
 import '../services/media_service.dart';
-import '../services/speech_service.dart';
 import '../services/text_parsing_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/discipline_selector.dart';
@@ -25,7 +26,7 @@ class _NewLogScreenState extends State<NewLogScreen> {
   final _logStorage = LogStorage();
   final _mediaService = MediaService();
   final _textParsingService = TextParsingService();
-  final _speechService = SpeechService();
+  final _geminiSttService = GeminiSttService();
   final _aiParsingService = AIParsingService();
   final _formKey = GlobalKey<FormState>();
 
@@ -57,6 +58,15 @@ class _NewLogScreenState extends State<NewLogScreen> {
   void initState() {
     super.initState();
     _initializeForm();
+    _initializeServices();
+  }
+
+  void _initializeServices() {
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey != null && apiKey.isNotEmpty) {
+      _geminiSttService.setApiKey(apiKey);
+      _aiParsingService.setApiKey(apiKey);
+    }
   }
 
   void _initializeForm() {
@@ -107,6 +117,7 @@ class _NewLogScreenState extends State<NewLogScreen> {
     _conditionController.dispose();
     _notesController.dispose();
     _quickInputController.dispose();
+    _geminiSttService.dispose();
     super.dispose();
   }
 
@@ -271,32 +282,52 @@ class _NewLogScreenState extends State<NewLogScreen> {
 
   Future<void> _toggleVoiceInput() async {
     if (_isListening) {
-      await _speechService.stopListening();
-      setState(() => _isListening = false);
+      // Stop recording and transcribe
+      setState(() => _isAIParsing = true);
+
+      final transcription = await _geminiSttService.stopAndTranscribe();
+
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+          _isAIParsing = false;
+          if (transcription != null && transcription.isNotEmpty) {
+            _quickInputController.text = transcription;
+          }
+        });
+      }
     } else {
-      final initialized = await _speechService.initialize();
-      if (!initialized) {
+      // Check API key
+      if (!_geminiSttService.isConfigured) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('음성 인식을 사용할 수 없습니다')),
+            const SnackBar(content: Text('API 키가 설정되지 않았습니다')),
           );
         }
         return;
       }
 
-      await _speechService.startListening(
-        onResult: (text) {
-          setState(() {
-            _quickInputController.text = text;
-          });
-        },
-        onListeningStarted: () {
-          setState(() => _isListening = true);
-        },
-        onListeningStopped: () {
-          setState(() => _isListening = false);
-        },
-      );
+      // Check permission and start recording
+      final hasPermission = await _geminiSttService.checkPermission();
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('마이크 권한이 필요합니다')),
+          );
+        }
+        return;
+      }
+
+      final started = await _geminiSttService.startRecording();
+      if (started) {
+        setState(() => _isListening = true);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('녹음을 시작할 수 없습니다')),
+          );
+        }
+      }
     }
   }
 

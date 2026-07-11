@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/analysis_result.dart';
 import '../models/discipline.dart';
@@ -213,18 +214,43 @@ class _CoachScreenState extends State<CoachScreen> {
                   colors: [Color(0xFF14405F), Color(0xFF071522)],
                 ),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  const Center(
-                    child: Icon(Icons.play_arrow, size: 20, color: Colors.white),
+                  // Thumbnail image
+                  if (analysis.thumbnailPath != null)
+                    Image.file(
+                      File(analysis.thumbnailPath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(Icons.videocam, size: 20, color: Colors.white54),
+                      ),
+                    )
+                  else
+                    const Center(
+                      child: Icon(Icons.videocam, size: 20, color: Colors.white54),
+                    ),
+                  // Play icon overlay
+                  Center(
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.play_arrow, size: 16, color: Colors.white),
+                    ),
                   ),
+                  // Mode badge
                   Positioned(
                     top: 4,
                     right: 4,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
+                        color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
