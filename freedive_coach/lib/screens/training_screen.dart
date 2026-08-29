@@ -1,13 +1,49 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../models/training_session.dart';
 import '../theme/app_theme.dart';
 import '../models/breathing_table.dart';
+import '../services/training_storage.dart';
 import '../widgets/surface_card.dart';
 import 'breathing_setup_screen.dart';
 import 'simulation_setup_screen.dart';
 import 'training_history_screen.dart';
 
-class TrainingScreen extends StatelessWidget {
+class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
+
+  @override
+  State<TrainingScreen> createState() => _TrainingScreenState();
+}
+
+class _TrainingScreenState extends State<TrainingScreen> {
+  final _trainingStorage = TrainingStorage();
+  List<TrainingSession> _recentSessions = [];
+  int _weekTrainingCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final sessions = await _trainingStorage.getRecentSessions(count: 3);
+
+    // Calculate week training count
+    final now = DateTime.now();
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final allSessions = await _trainingStorage.getSessions();
+    final weekSessions = allSessions.where((t) =>
+        t.startedAt.isAfter(weekStart.subtract(const Duration(days: 1)))).toList();
+
+    if (mounted) {
+      setState(() {
+        _recentSessions = sessions;
+        _weekTrainingCount = weekSessions.length;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +81,15 @@ class TrainingScreen extends StatelessWidget {
   }
 
   Widget _buildStreakBanner() {
+    // 실제 훈련 횟수가 없고 디버그 모드가 아니면 표시하지 않음
+    if (_weekTrainingCount == 0 && !kDebugMode) {
+      return const SizedBox.shrink();
+    }
+
+    final displayText = kDebugMode && _weekTrainingCount == 0
+        ? '이번 주 4회 훈련 — 연속 12일째예요! (샘플)'
+        : '이번 주 $_weekTrainingCount회 훈련';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -57,7 +102,7 @@ class TrainingScreen extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '이번 주 4회 훈련 — 연속 12일째예요!',
+              displayText,
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.primaryBright,
                 fontWeight: FontWeight.w700,
@@ -202,13 +247,38 @@ class TrainingScreen extends StatelessWidget {
   }
 
   Widget _buildHistorySection(BuildContext context) {
+    // 실제 데이터가 없고 디버그 모드가 아니면 빈 상태 표시
+    final hasRealData = _recentSessions.isNotEmpty;
+    final showSampleData = kDebugMode && !hasRealData;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('훈련 기록', style: AppTextStyles.sectionTitle),
+            Row(
+              children: [
+                Text('훈련 기록', style: AppTextStyles.sectionTitle),
+                if (showSampleData) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '샘플',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.coral,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
             GestureDetector(
               onTap: () {
                 Navigator.of(context).push(
@@ -223,21 +293,95 @@ class TrainingScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        SurfaceCard(
-          padding: EdgeInsets.zero,
-          borderColor: Colors.transparent,
-          child: Column(
-            children: [
-              _buildHistoryItem('CO\u2082 테이블', '8라운드 완료', '오늘 오전'),
-              _buildHistoryDivider(),
-              _buildHistoryItem('다이빙 시뮬레이션', '40m 완료', '어제'),
-              _buildHistoryDivider(),
-              _buildHistoryItem('O\u2082 테이블', '6라운드 완료', '2일 전'),
-            ],
-          ),
-        ),
+        if (hasRealData)
+          _buildRealHistoryList()
+        else if (showSampleData)
+          _buildSampleHistoryList()
+        else
+          _buildEmptyHistoryState(),
       ],
     );
+  }
+
+  Widget _buildRealHistoryList() {
+    return SurfaceCard(
+      padding: EdgeInsets.zero,
+      borderColor: Colors.transparent,
+      child: Column(
+        children: [
+          for (int i = 0; i < _recentSessions.length; i++) ...[
+            if (i > 0) _buildHistoryDivider(),
+            _buildHistoryItem(
+              _recentSessions[i].tableTypeName,
+              '${_recentSessions[i].completedRounds}/${_recentSessions[i].totalRounds} 라운드 ${_recentSessions[i].isCompleted ? '완료' : '중단'}',
+              _formatRelativeTime(_recentSessions[i].startedAt),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSampleHistoryList() {
+    return SurfaceCard(
+      padding: EdgeInsets.zero,
+      borderColor: Colors.transparent,
+      child: Column(
+        children: [
+          _buildHistoryItem('CO\u2082 테이블', '8라운드 완료', '오늘 오전'),
+          _buildHistoryDivider(),
+          _buildHistoryItem('다이빙 시뮬레이션', '40m 완료', '어제'),
+          _buildHistoryDivider(),
+          _buildHistoryItem('O\u2082 테이블', '6라운드 완료', '2일 전'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyHistoryState() {
+    return SurfaceCard(
+      padding: const EdgeInsets.all(20),
+      borderColor: Colors.transparent,
+      child: Column(
+        children: [
+          Icon(
+            Icons.history,
+            size: 36,
+            color: AppColors.muted.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '아직 훈련 기록이 없어요',
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '호흡 훈련을 시작해보세요',
+            style: AppTextStyles.caption,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatRelativeTime(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final sessionDate = DateTime(date.year, date.month, date.day);
+
+    if (sessionDate == today) {
+      final hour = date.hour;
+      return hour < 12 ? '오늘 오전' : '오늘 오후';
+    } else if (sessionDate == yesterday) {
+      return '어제';
+    } else {
+      final diff = today.difference(sessionDate).inDays;
+      if (diff < 7) {
+        return '$diff일 전';
+      }
+      return '${date.month}/${date.day}';
+    }
   }
 
   Widget _buildHistoryItem(String title, String subtitle, String time) {
