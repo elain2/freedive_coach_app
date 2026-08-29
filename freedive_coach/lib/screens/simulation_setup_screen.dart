@@ -115,7 +115,7 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
           onPressed: () {
             if (_profile.targetDepth > 10) {
               setState(() {
-                _profile = _profile.copyWith(targetDepth: _profile.targetDepth - 5);
+                _profile = _profile.copyWith(targetDepth: _profile.targetDepth - 1);
                 _adjustMilestones();
               });
             }
@@ -144,7 +144,7 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
           onPressed: () {
             if (_profile.targetDepth < 100) {
               setState(() {
-                _profile = _profile.copyWith(targetDepth: _profile.targetDepth + 5);
+                _profile = _profile.copyWith(targetDepth: _profile.targetDepth + 1);
               });
             }
           },
@@ -277,7 +277,7 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
                 icon: const Icon(Icons.remove, size: 18),
                 color: AppColors.muted,
                 onPressed: () {
-                  if (value > 5) onChanged(value - 5);
+                  if (value > 1) onChanged(value - 1);
                 },
               ),
               Text(
@@ -288,7 +288,7 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
                 icon: const Icon(Icons.add, size: 18),
                 color: AppColors.muted,
                 onPressed: () {
-                  if (value < _profile.targetDepth - 5) onChanged(value + 5);
+                  if (value < _profile.targetDepth - 1) onChanged(value + 1);
                 },
               ),
             ],
@@ -365,10 +365,10 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
   void _adjustMilestones() {
     // Ensure milestones are within target depth
     if (_profile.mouthfillDepth >= _profile.targetDepth) {
-      _profile = _profile.copyWith(mouthfillDepth: _profile.targetDepth - 5);
+      _profile = _profile.copyWith(mouthfillDepth: _profile.targetDepth - 1);
     }
     if (_profile.freefallStartDepth >= _profile.targetDepth) {
-      _profile = _profile.copyWith(freefallStartDepth: _profile.targetDepth - 10);
+      _profile = _profile.copyWith(freefallStartDepth: _profile.targetDepth - 2);
     }
   }
 
