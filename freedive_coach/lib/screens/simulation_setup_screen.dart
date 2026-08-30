@@ -300,25 +300,99 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
 
   Widget _buildEstimatedTime() {
     final estimatedTime = _profile.estimatedDiveTime;
+    final calculatedTime = _profile.calculatedDiveTime;
     final minutes = estimatedTime.inMinutes;
     final seconds = estimatedTime.inSeconds % 60;
+    final isCustom = _profile.isCustomDiveTime;
 
-    return SurfaceCard(
-      padding: const EdgeInsets.all(16),
-      borderColor: Colors.transparent,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('예상 다이브 타임', style: AppTextStyles.body),
-          Text(
-            '$minutes:${seconds.toString().padLeft(2, '0')}',
-            style: AppTextStyles.titleSmall.copyWith(
-              color: AppColors.primaryBright,
-              fontFamily: 'monospace',
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('다이브 타임', style: AppTextStyles.sectionTitle),
+            if (isCustom)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _profile = _profile.copyWith(clearCustomDiveTime: true);
+                  });
+                },
+                child: Text(
+                  '자동 계산',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.primaryBright),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SurfaceCard(
+          padding: const EdgeInsets.all(16),
+          borderColor: isCustom ? AppColors.primaryBright.withValues(alpha: 0.5) : Colors.transparent,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    color: AppColors.primaryBright,
+                    onPressed: () {
+                      final newSeconds = estimatedTime.inSeconds - 5;
+                      if (newSeconds >= 30) {
+                        setState(() {
+                          _profile = _profile.copyWith(
+                            customDiveTime: Duration(seconds: newSeconds),
+                          );
+                        });
+                      }
+                    },
+                  ),
+                  Container(
+                    width: 100,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.bg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$minutes:${seconds.toString().padLeft(2, '0')}',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.titleLarge.copyWith(
+                        fontFamily: 'monospace',
+                        fontSize: 32,
+                        color: AppColors.primaryBright,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: AppColors.primaryBright,
+                    onPressed: () {
+                      final newSeconds = estimatedTime.inSeconds + 5;
+                      if (newSeconds <= 600) { // Max 10 minutes
+                        setState(() {
+                          _profile = _profile.copyWith(
+                            customDiveTime: Duration(seconds: newSeconds),
+                          );
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              if (isCustom) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '자동 계산: ${calculatedTime.inMinutes}:${(calculatedTime.inSeconds % 60).toString().padLeft(2, '0')}',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                ),
+              ],
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

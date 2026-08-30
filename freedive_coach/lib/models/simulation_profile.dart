@@ -8,6 +8,7 @@ class SimulationProfile {
   final int freefallStartDepth; // Freefall start depth in meters
   final double freefallSpeed;   // Freefall speed in m/s
   final int mouthfillDepth;     // Mouthfill depth in meters
+  final Duration? customDiveTime; // User-defined dive time (overrides calculated)
   final DateTime createdAt;
 
   const SimulationProfile({
@@ -19,6 +20,7 @@ class SimulationProfile {
     required this.freefallStartDepth,
     required this.freefallSpeed,
     required this.mouthfillDepth,
+    this.customDiveTime,
     required this.createdAt,
   });
 
@@ -37,8 +39,16 @@ class SimulationProfile {
     );
   }
 
-  /// Calculate estimated dive time
+  /// Calculate estimated dive time (or return custom time if set)
   Duration get estimatedDiveTime {
+    if (customDiveTime != null) {
+      return customDiveTime!;
+    }
+    return calculatedDiveTime;
+  }
+
+  /// Calculate dive time based on depth and speed settings
+  Duration get calculatedDiveTime {
     // Descent: active kick to freefall start + freefall to target
     final activeDescentDepth = freefallStartDepth;
     final freefallDepth = targetDepth - freefallStartDepth;
@@ -50,6 +60,9 @@ class SimulationProfile {
     final totalSeconds = activeDescentTime + freefallTime + ascentTime;
     return Duration(seconds: totalSeconds.round());
   }
+
+  /// Check if using custom dive time
+  bool get isCustomDiveTime => customDiveTime != null;
 
   /// Validate profile parameters
   String? validate() {
@@ -74,6 +87,8 @@ class SimulationProfile {
     int? freefallStartDepth,
     double? freefallSpeed,
     int? mouthfillDepth,
+    Duration? customDiveTime,
+    bool clearCustomDiveTime = false,
     DateTime? createdAt,
   }) {
     return SimulationProfile(
@@ -85,6 +100,7 @@ class SimulationProfile {
       freefallStartDepth: freefallStartDepth ?? this.freefallStartDepth,
       freefallSpeed: freefallSpeed ?? this.freefallSpeed,
       mouthfillDepth: mouthfillDepth ?? this.mouthfillDepth,
+      customDiveTime: clearCustomDiveTime ? null : (customDiveTime ?? this.customDiveTime),
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -98,6 +114,7 @@ class SimulationProfile {
     'freefallStartDepth': freefallStartDepth,
     'freefallSpeed': freefallSpeed,
     'mouthfillDepth': mouthfillDepth,
+    'customDiveTimeSeconds': customDiveTime?.inSeconds,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -110,6 +127,9 @@ class SimulationProfile {
     freefallStartDepth: json['freefallStartDepth'] as int,
     freefallSpeed: (json['freefallSpeed'] as num).toDouble(),
     mouthfillDepth: json['mouthfillDepth'] as int,
+    customDiveTime: json['customDiveTimeSeconds'] != null
+        ? Duration(seconds: json['customDiveTimeSeconds'] as int)
+        : null,
     createdAt: DateTime.parse(json['createdAt'] as String),
   );
 }
