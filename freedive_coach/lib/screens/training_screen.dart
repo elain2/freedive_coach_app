@@ -141,18 +141,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
         );
       },
       child: SurfaceCard(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         borderColor: Colors.transparent,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 20, color: AppColors.primaryBright),
-            const SizedBox(height: 8),
+            Icon(icon, size: 18, color: AppColors.primaryBright),
+            const SizedBox(height: 6),
             Text(title, style: AppTextStyles.sectionTitle),
             const SizedBox(height: 4),
-            Text(rounds, style: AppTextStyles.caption),
-            const SizedBox(height: 2),
-            Text(duration, style: AppTextStyles.monoSmall),
+            Text('$rounds · $duration', style: AppTextStyles.caption),
           ],
         ),
       ),
