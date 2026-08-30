@@ -9,6 +9,7 @@ class SimulationProfile {
   final double freefallSpeed;   // Freefall speed in m/s
   final int mouthfillDepth;     // Mouthfill depth in meters
   final Duration? customDiveTime; // User-defined dive time (overrides calculated)
+  final List<DepthAlert> depthAlerts; // User-defined depth alerts
   final DateTime createdAt;
 
   const SimulationProfile({
@@ -21,6 +22,7 @@ class SimulationProfile {
     required this.freefallSpeed,
     required this.mouthfillDepth,
     this.customDiveTime,
+    this.depthAlerts = const [],
     required this.createdAt,
   });
 
@@ -89,6 +91,7 @@ class SimulationProfile {
     int? mouthfillDepth,
     Duration? customDiveTime,
     bool clearCustomDiveTime = false,
+    List<DepthAlert>? depthAlerts,
     DateTime? createdAt,
   }) {
     return SimulationProfile(
@@ -101,6 +104,7 @@ class SimulationProfile {
       freefallSpeed: freefallSpeed ?? this.freefallSpeed,
       mouthfillDepth: mouthfillDepth ?? this.mouthfillDepth,
       customDiveTime: clearCustomDiveTime ? null : (customDiveTime ?? this.customDiveTime),
+      depthAlerts: depthAlerts ?? this.depthAlerts,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -115,6 +119,7 @@ class SimulationProfile {
     'freefallSpeed': freefallSpeed,
     'mouthfillDepth': mouthfillDepth,
     'customDiveTimeSeconds': customDiveTime?.inSeconds,
+    'depthAlerts': depthAlerts.map((a) => a.toJson()).toList(),
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -130,6 +135,9 @@ class SimulationProfile {
     customDiveTime: json['customDiveTimeSeconds'] != null
         ? Duration(seconds: json['customDiveTimeSeconds'] as int)
         : null,
+    depthAlerts: (json['depthAlerts'] as List<dynamic>?)
+        ?.map((a) => DepthAlert.fromJson(a as Map<String, dynamic>))
+        .toList() ?? [],
     createdAt: DateTime.parse(json['createdAt'] as String),
   );
 }
@@ -140,6 +148,62 @@ enum MilestoneType {
   freefall,   // Freefall start
   turn,       // Bottom/turn point
   surface,    // Surface reached
+  custom,     // User-defined depth alert
+}
+
+/// User-defined depth alert
+class DepthAlert {
+  final int depth;          // Alert depth in meters
+  final String? label;      // Optional custom label
+  final bool onDescent;     // Trigger during descent
+  final bool onAscent;      // Trigger during ascent
+
+  const DepthAlert({
+    required this.depth,
+    this.label,
+    this.onDescent = true,
+    this.onAscent = true,
+  });
+
+  String get displayName => label ?? '${depth}m';
+
+  DepthAlert copyWith({
+    int? depth,
+    String? label,
+    bool? onDescent,
+    bool? onAscent,
+  }) {
+    return DepthAlert(
+      depth: depth ?? this.depth,
+      label: label ?? this.label,
+      onDescent: onDescent ?? this.onDescent,
+      onAscent: onAscent ?? this.onAscent,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'depth': depth,
+    'label': label,
+    'onDescent': onDescent,
+    'onAscent': onAscent,
+  };
+
+  factory DepthAlert.fromJson(Map<String, dynamic> json) => DepthAlert(
+    depth: json['depth'] as int,
+    label: json['label'] as String?,
+    onDescent: json['onDescent'] as bool? ?? true,
+    onAscent: json['onAscent'] as bool? ?? true,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DepthAlert &&
+          runtimeType == other.runtimeType &&
+          depth == other.depth;
+
+  @override
+  int get hashCode => depth.hashCode;
 }
 
 /// A milestone event during simulation
@@ -147,14 +211,17 @@ class Milestone {
   final MilestoneType type;
   final int depth;
   final Duration timeFromStart;
+  final String? customLabel;
 
   const Milestone({
     required this.type,
     required this.depth,
     required this.timeFromStart,
+    this.customLabel,
   });
 
   String get displayName {
+    if (customLabel != null) return customLabel!;
     switch (type) {
       case MilestoneType.mouthfill:
         return '마우스필';
@@ -164,6 +231,8 @@ class Milestone {
         return '턴';
       case MilestoneType.surface:
         return '수면';
+      case MilestoneType.custom:
+        return '${depth}m';
     }
   }
 }

@@ -38,6 +38,9 @@ class SimulationService extends ChangeNotifier {
   // Milestones tracking
   final Set<MilestoneType> _passedMilestones = {};
 
+  // Custom depth alerts tracking (key: "depth_descent" or "depth_ascent")
+  final Set<String> _triggeredAlerts = {};
+
   // Callbacks
   OnDepthChange? onDepthChange;
   OnMilestone? onMilestone;
@@ -86,6 +89,7 @@ class SimulationService extends ChangeNotifier {
     _currentDepth = 0;
     _elapsedTime = Duration.zero;
     _passedMilestones.clear();
+    _triggeredAlerts.clear();
     notifyListeners();
   }
 
@@ -98,6 +102,7 @@ class SimulationService extends ChangeNotifier {
       _currentDepth = 0;
       _elapsedTime = Duration.zero;
       _passedMilestones.clear();
+      _triggeredAlerts.clear();
     }
 
     _state = SimulationState.running;
@@ -130,6 +135,7 @@ class SimulationService extends ChangeNotifier {
       _currentDepth = 0;
       _elapsedTime = Duration.zero;
       _passedMilestones.clear();
+      _triggeredAlerts.clear();
     }
     notifyListeners();
   }
@@ -143,6 +149,7 @@ class SimulationService extends ChangeNotifier {
     _currentDepth = 0;
     _elapsedTime = Duration.zero;
     _passedMilestones.clear();
+    _triggeredAlerts.clear();
     notifyListeners();
   }
 
@@ -179,6 +186,7 @@ class SimulationService extends ChangeNotifier {
 
       case SimulationPhase.ascent:
         _currentDepth -= _profile!.ascentSpeed * tickSeconds;
+        _checkCustomAlerts(isDescent: false);
         if (_currentDepth <= 0) {
           _currentDepth = 0;
           _completeSimulation();
@@ -208,6 +216,9 @@ class SimulationService extends ChangeNotifier {
       onMilestone?.call(milestone);
     }
 
+    // Check custom depth alerts during descent
+    _checkCustomAlerts(isDescent: true);
+
     // Check freefall start
     if (_currentDepth >= profile.freefallStartDepth) {
       if (!_passedMilestones.contains(MilestoneType.freefall)) {
@@ -226,6 +237,9 @@ class SimulationService extends ChangeNotifier {
   void _checkFreefallMilestones() {
     final profile = _profile!;
 
+    // Check custom depth alerts during freefall (still descent)
+    _checkCustomAlerts(isDescent: true);
+
     // Check turn point (target depth)
     if (_currentDepth >= profile.targetDepth) {
       _currentDepth = profile.targetDepth.toDouble();
@@ -237,6 +251,40 @@ class SimulationService extends ChangeNotifier {
       );
       onMilestone?.call(milestone);
       _phase = SimulationPhase.turn;
+    }
+  }
+
+  void _checkCustomAlerts({required bool isDescent}) {
+    final profile = _profile!;
+
+    for (final alert in profile.depthAlerts) {
+      final alertKey = '${alert.depth}_${isDescent ? 'descent' : 'ascent'}';
+
+      // Skip if already triggered
+      if (_triggeredAlerts.contains(alertKey)) continue;
+
+      // Check if alert should trigger for this phase
+      if (isDescent && !alert.onDescent) continue;
+      if (!isDescent && !alert.onAscent) continue;
+
+      // Check if we've passed the alert depth
+      bool shouldTrigger = false;
+      if (isDescent) {
+        shouldTrigger = _currentDepth >= alert.depth;
+      } else {
+        shouldTrigger = _currentDepth <= alert.depth;
+      }
+
+      if (shouldTrigger) {
+        _triggeredAlerts.add(alertKey);
+        final milestone = Milestone(
+          type: MilestoneType.custom,
+          depth: alert.depth,
+          timeFromStart: _elapsedTime,
+          customLabel: alert.displayName,
+        );
+        onMilestone?.call(milestone);
+      }
     }
   }
 
