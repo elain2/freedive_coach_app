@@ -428,6 +428,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentAnalyses() {
+    if (_recentAnalyses.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -481,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         width: 160,
         height: 110,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
@@ -515,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   analysis.averageScore.toStringAsFixed(1),
                   style: AppTextStyles.titleSmall.copyWith(
-                    fontSize: 28,
+                    fontSize: 26,
                     color: AppColors.primaryBright,
                   ),
                 ),
@@ -526,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               _getScoreLabel(analysis.averageScore),
               style: AppTextStyles.caption.copyWith(color: AppColors.muted),

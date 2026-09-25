@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/training_session.dart';
 import '../theme/app_theme.dart';
@@ -81,14 +80,12 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   Widget _buildStreakBanner() {
-    // 실제 훈련 횟수가 없고 디버그 모드가 아니면 표시하지 않음
-    if (_weekTrainingCount == 0 && !kDebugMode) {
+    // 실제 훈련 횟수가 없으면 표시하지 않음
+    if (_weekTrainingCount == 0) {
       return const SizedBox.shrink();
     }
 
-    final displayText = kDebugMode && _weekTrainingCount == 0
-        ? '이번 주 4회 훈련 — 연속 12일째예요! (샘플)'
-        : '이번 주 $_weekTrainingCount회 훈련';
+    final displayText = '이번 주 $_weekTrainingCount회 훈련';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -245,9 +242,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   Widget _buildHistorySection(BuildContext context) {
-    // 실제 데이터가 없고 디버그 모드가 아니면 빈 상태 표시
     final hasRealData = _recentSessions.isNotEmpty;
-    final showSampleData = kDebugMode && !hasRealData;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,28 +250,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Text('훈련 기록', style: AppTextStyles.sectionTitle),
-                if (showSampleData) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.coral.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '샘플',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.coral,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            Text('훈련 기록', style: AppTextStyles.sectionTitle),
             GestureDetector(
               onTap: () {
                 Navigator.of(context).push(
@@ -293,8 +267,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
         const SizedBox(height: 10),
         if (hasRealData)
           _buildRealHistoryList()
-        else if (showSampleData)
-          _buildSampleHistoryList()
         else
           _buildEmptyHistoryState(),
       ],
@@ -315,22 +287,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
               _formatRelativeTime(_recentSessions[i].startedAt),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSampleHistoryList() {
-    return SurfaceCard(
-      padding: EdgeInsets.zero,
-      borderColor: Colors.transparent,
-      child: Column(
-        children: [
-          _buildHistoryItem('CO\u2082 테이블', '8라운드 완료', '오늘 오전'),
-          _buildHistoryDivider(),
-          _buildHistoryItem('다이빙 시뮬레이션', '40m 완료', '어제'),
-          _buildHistoryDivider(),
-          _buildHistoryItem('O\u2082 테이블', '6라운드 완료', '2일 전'),
         ],
       ),
     );
