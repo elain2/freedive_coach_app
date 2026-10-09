@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'ai_consent.dart';
 import '../models/discipline.dart';
 
 /// Parsed result from AI
@@ -51,7 +52,7 @@ class AIParsedLog {
 class AIParsingService {
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models';
-  static const String _model = 'gemini-2.0-flash';
+  static const String _model = 'gemini-2.5-flash';
 
   String? _apiKey;
 
@@ -142,6 +143,7 @@ class AIParsingService {
       }
     });
 
+    await requireAiConsent();
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../services/ai_consent.dart';
 import '../services/data_export_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
@@ -21,6 +22,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoBackup = false;
   bool _isExporting = false;
   bool _isImporting = false;
+  bool _aiConsent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    hasAiConsent().then((v) {
+      if (mounted) setState(() => _aiConsent = v);
+    });
+  }
+
+  Future<void> _toggleAiConsent(bool value) async {
+    await setAiConsent(value);
+    if (mounted) setState(() => _aiConsent = value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +149,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 description: '훈련 리마인더 및 앱 알림',
                 value: _notifications,
                 onChanged: (value) => setState(() => _notifications = value),
+              ),
+              const Divider(color: AppColors.line, height: 24),
+              _buildToggleItem(
+                icon: Icons.auto_awesome_outlined,
+                title: 'AI 데이터 전송 동의',
+                description: 'Google Gemini로 음성·영상·기록 전송 허용',
+                value: _aiConsent,
+                onChanged: _toggleAiConsent,
               ),
             ],
           ),

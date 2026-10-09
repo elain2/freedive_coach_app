@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
+import 'ai_consent.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Service for speech-to-text using Gemini API
 class GeminiSttService {
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models';
-  static const String _model = 'gemini-2.0-flash';
+  static const String _model = 'gemini-2.5-flash';
 
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   String? _apiKey;
@@ -51,9 +52,15 @@ class GeminiSttService {
 
   /// Start recording audio
   Future<bool> startRecording() async {
-    if (_isRecording) return true;
+    if (_isRecording) {
+      print('[GeminiSTT] Already recording');
+      return true;
+    }
 
-    if (!await _initialize()) return false;
+    if (!await _initialize()) {
+      print('[GeminiSTT] Failed to initialize recorder');
+      return false;
+    }
 
     final appDir = await getApplicationDocumentsDirectory();
     final recordDir = Directory('${appDir.path}/recordings');
@@ -62,6 +69,7 @@ class GeminiSttService {
     }
 
     _recordingPath = '${recordDir.path}/stt_${DateTime.now().millisecondsSinceEpoch}.aac';
+    print('[GeminiSTT] Recording to: $_recordingPath');
 
     try {
       await _recorder.startRecorder(
@@ -71,20 +79,28 @@ class GeminiSttService {
         numChannels: 1,
       );
       _isRecording = true;
+      print('[GeminiSTT] Recording started');
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[GeminiSTT] Error starting recording: $e');
+      print('[GeminiSTT] Stack trace: $stackTrace');
       return false;
     }
   }
 
   /// Stop recording and transcribe using Gemini
   Future<String?> stopAndTranscribe() async {
-    if (!_isRecording || _recordingPath == null) return null;
+    if (!_isRecording || _recordingPath == null) {
+      print('[GeminiSTT] stopAndTranscribe: Not recording or no path');
+      return null;
+    }
 
     try {
+      print('[GeminiSTT] Stopping recorder...');
       await _recorder.stopRecorder();
       _isRecording = false;
 
+      print('[GeminiSTT] Recording saved to: $_recordingPath');
       final transcription = await _transcribeAudio(_recordingPath!);
 
       // Clean up recording file
@@ -94,7 +110,9 @@ class GeminiSttService {
       }
 
       return transcription;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[GeminiSTT] Error in stopAndTranscribe: $e');
+      print('[GeminiSTT] Stack trace: $stackTrace');
       _isRecording = false;
       return null;
     }
@@ -122,19 +140,30 @@ class GeminiSttService {
   /// Transcribe audio file using Gemini API
   Future<String?> _transcribeAudio(String audioPath) async {
     if (_apiKey == null) {
+      print('[GeminiSTT] Error: API key not set');
       throw Exception('API key not set');
     }
 
     final file = File(audioPath);
     if (!await file.exists()) {
+      print('[GeminiSTT] Error: Audio file not found at $audioPath');
       throw Exception('Audio file not found');
     }
 
     final bytes = await file.readAsBytes();
+    print('[GeminiSTT] Audio file size: ${bytes.length} bytes');
+
+    if (bytes.isEmpty) {
+      print('[GeminiSTT] Error: Audio file is empty');
+      throw Exception('Audio file is empty');
+    }
+
     final base64Audio = base64Encode(bytes);
 
     final url = '$_baseUrl/$_model:generateContent?key=$_apiKey';
+    print('[GeminiSTT] Sending request to Gemini API...');
 
+    await requireAiConsent();
     final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
@@ -169,23 +198,30 @@ class GeminiSttService {
       }),
     );
 
+    print('[GeminiSTT] Response status: ${response.statusCode}');
+
     if (response.statusCode != 200) {
-      throw Exception('API error: ${response.statusCode}');
+      print('[GeminiSTT] API error response: ${response.body}');
+      throw Exception('API error: ${response.statusCode} - ${response.body}');
     }
 
     final data = jsonDecode(response.body);
     final candidates = data['candidates'] as List?;
     if (candidates == null || candidates.isEmpty) {
+      print('[GeminiSTT] No candidates in response: ${response.body}');
       return null;
     }
 
     final content = candidates[0]['content'];
     final parts = content['parts'] as List?;
     if (parts == null || parts.isEmpty) {
+      print('[GeminiSTT] No parts in response');
       return null;
     }
 
-    return parts[0]['text'] as String?;
+    final result = parts[0]['text'] as String?;
+    print('[GeminiSTT] Transcription result: $result');
+    return result;
   }
 
   /// Dispose resources

@@ -4,6 +4,7 @@ import '../services/log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surface_card.dart';
 import 'debug_screen.dart';
+import 'garmin_import_screen.dart';
 import 'goals_screen.dart';
 import 'help_screen.dart';
 import 'notification_settings_screen.dart';
@@ -86,6 +87,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildStatsCard(),
           const SizedBox(height: 20),
           _buildMenuSection(),
+          const SizedBox(height: 20),
+          _buildLabSection(),
         ],
       ),
     );
@@ -356,6 +359,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
               size: 18,
               color: isDanger ? AppColors.coral : AppColors.muted,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('실험실', style: AppTextStyles.sectionTitle),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.coral.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'BETA',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.coral,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildLabMenuItem(
+          Icons.watch,
+          'Garmin 앱에서 로그 가져오기',
+          'Garmin Connect 연동',
+          onTap: () async {
+            final result = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(builder: (_) => const GarminImportScreen()),
+            );
+            if (result == true) {
+              _loadStats();
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLabMenuItem(
+    IconData icon,
+    String title,
+    String subtitle, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.coral.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 20, color: AppColors.coral),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppTextStyles.body),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.muted),
           ],
         ),
       ),

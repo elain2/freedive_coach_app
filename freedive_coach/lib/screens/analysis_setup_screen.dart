@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../services/ai_consent.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -122,6 +123,15 @@ class _AnalysisSetupScreenState extends State<AnalysisSetupScreen> {
       setState(() {
         _errorMessage = '아직 지원하지 않는 종목입니다: ${_selectedDiscipline.displayName}';
       });
+      return;
+    }
+
+    if (!await ensureAiConsent(context)) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'AI 영상 분석은 데이터 전송 동의 후 사용할 수 있습니다.';
+        });
+      }
       return;
     }
 

@@ -8,6 +8,7 @@ import 'screens/log_timeline_screen.dart';
 import 'screens/coach_screen.dart';
 import 'screens/training_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/ai_consent_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +33,7 @@ class FreeDiveCoachApp extends StatelessWidget {
       title: 'Freedive Coach',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const MainScreen(),
+      home: const AiConsentGate(child: MainScreen()),
     );
   }
 }

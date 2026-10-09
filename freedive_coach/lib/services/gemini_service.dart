@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'ai_consent.dart';
 import '../models/analysis_result.dart';
 import '../models/discipline.dart';
 
@@ -218,6 +219,7 @@ categories 배열에는 다음 항목들을 순서대로 포함하세요: $categ
       },
     });
 
+    await requireAiConsent();
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
